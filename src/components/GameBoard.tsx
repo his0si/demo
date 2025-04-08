@@ -6,6 +6,8 @@ import Board from './Board';
 import GameControls from './GameControls';
 import useGame from '@/hooks/useGame';
 import RightSidebar from './RightSidebar';
+import { Intersection, Stone } from '@/lib/types';
+import { IntersectionImpl } from '@/lib/game';
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
@@ -52,6 +54,15 @@ export default function GameBoard() {
     }
   }, [game]);
 
+  // Stone[][] 타입을 Intersection[][] 타입으로 변환하는 함수
+  const convertBoardState = useCallback((stoneBoard: Stone[][] | null): Intersection[][] => {
+    if (!stoneBoard) return [];
+    
+    return stoneBoard.map((row, x) => 
+      row.map((stone, y) => new IntersectionImpl(x, y, stone))
+    );
+  }, []);
+
   const handleIntersectionClick = useCallback((x: number, y: number) => {
     if (isGameEnded) {
       claimTerritory(x, y);
@@ -70,10 +81,7 @@ export default function GameBoard() {
           }
         } else {
           if (!game) return;
-          // 이 부분에서 label을 선언하고 할당하지만 사용하지 않고 있습니다.
-          // game.addMarker에 사용해야 하는데 주석 처리되어 있음
           
-          // 주석 처리된 코드를 활성화하여 label 사용
           if (currentTool === 'letter') {
             const allLetters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'];
             const usedLabels = game.markers.filter(m => m.type === 'letter').map(m => m.label);
@@ -102,13 +110,16 @@ export default function GameBoard() {
     );
   }
   
+  // boardState를 Intersection[][] 타입으로 변환
+  const intersectionBoardState = convertBoardState(boardState);
+  
   return (
     <div className="flex gap-4">
       <div className="flex-1">
         <div className="container mx-auto p-4">
           <Board
             size={19}
-            boardState={boardState}
+            boardState={intersectionBoardState}
             lastMove={lastMove}
             isGameEnded={isGameEnded}
             onIntersectionClick={handleIntersectionClick}

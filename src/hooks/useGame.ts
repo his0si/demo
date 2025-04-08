@@ -130,9 +130,12 @@ export default function useGame() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.sgf';
-    input.onchange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
+    input.onchange = (event: Event) => {
+      // 타입 단언(type assertion)을 사용하여 HTMLInputElement와 FileList에 접근
+      const target = event.target as HTMLInputElement;
+      const file = target.files?.[0];
       if (!file) return;
+      
       const reader = new FileReader();
       reader.onload = () => {
         const sgfContent = reader.result as string;

@@ -8,7 +8,7 @@ export default function useGame() {
   const [game, setGame] = useState<Game | null>(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [isGameEnded, setIsGameEnded] = useState(false);
-  const [boardState, setBoardState] = useState<Stone[][]>(null);
+  const [boardState, setBoardState] = useState<Stone[][]>([]);
   const [blackScore, setBlackScore] = useState(0);
   const [whiteScore, setWhiteScore] = useState(0);
   const [blackTerritory, setBlackTerritory] = useState(0);

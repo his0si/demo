@@ -23,7 +23,8 @@ export default function useGame() {
     if (!gameRef.current) return;
     
     const game = gameRef.current;
-    setBoardState([...game.intersections]);
+    // Intersection[][]에서 Stone[][]로 변환
+    setBoardState(game.intersections.map(row => row.map(intersection => intersection.stone)));
     setBlackScore(game.getBlackScore());
     setWhiteScore(game.getWhiteScore());
     setCurrentPlayer(game.getTurn());
@@ -53,7 +54,8 @@ export default function useGame() {
     setIsGameStarted(true);
     setIsGameEnded(false);
     setCurrentPlayer(Stone.Black);
-    setBoardState([...newGame.intersections]);
+    // Intersection[][]에서 Stone[][]로 변환
+    setBoardState(newGame.intersections.map(row => row.map(intersection => intersection.stone)));
     setBlackScore(0);
     setWhiteScore(0);
     setBlackTerritory(0);
@@ -69,7 +71,8 @@ export default function useGame() {
       gameRef.current = loadedGame;
       setGame(loadedGame);
       setIsGameStarted(true);
-      setBoardState([...loadedGame.intersections]);
+      // Intersection[][]에서 Stone[][]로 변환
+      setBoardState(loadedGame.intersections.map(row => row.map(intersection => intersection.stone)));
       setBlackScore(loadedGame.getBlackScore());
       setWhiteScore(loadedGame.getWhiteScore());
       setCurrentPlayer(loadedGame.getTurn());

@@ -165,11 +165,10 @@ export class GameStateImpl implements GameState {
   }
 
   public getState(moveNum: number): GameState | null {
-    // this를 로컬 변수에 할당하는 대신 직접 사용
-    let currentState: GameState = this;
+    // this를 직접 사용하여 에러 해결
+    let currentState: GameState | null = this;
 
-    while(currentState.moveNum > moveNum) {
-      if (!currentState?.prevGameState) return null;
+    while(currentState && currentState.moveNum > moveNum) {
       currentState = currentState.prevGameState;
     }
 
@@ -212,7 +211,7 @@ export class Game {
    * 바둑판 초기화
    */
   static initIntersections(xLines: number = 19, yLines: number = 19): Intersection[][] {
-    let ints = new Array(xLines);
+    const ints = new Array(xLines);
     for(let x = 0; x < xLines; x++) {
       ints[x] = new Array(yLines);
 
@@ -249,7 +248,8 @@ export class Game {
   
     // 이전 게임 상태를 추적하여 불필요한 참조 줄이기
     let prevState: GameState | null = game.gameState;
-    let boardState = game.copyIntersections(); // 현재 보드 상태 복사본
+    // boardState 변수 사용하지 않으므로 제거
+    let newBoardState = game.copyIntersections(); // 현재 보드 상태 복사본
   
     for (const node of nodes) {
       const moveMatch = node.match(movePattern);
@@ -291,7 +291,7 @@ export class Game {
       const coord = moveMatch ? moveMatch[2] : '';
       
       // 보드 상태 복사 대신 기존 배열 재사용
-      const newBoardState = game.copyIntersections();
+      newBoardState = game.copyIntersections();
       
       if (moveMatch && coord !== '') {
         const x = charToPos(coord[0]);
@@ -375,7 +375,6 @@ export class Game {
       }
       
       prevState = newState;
-      boardState = newBoardState;
       
       if (!game.gameState || game.gameState.moveNum === 0) {
         game.gameState = newState;
@@ -738,9 +737,9 @@ export class Game {
     const capturedGroups: Intersection[][] = [];
 
     // 이미 처리된 돌을 추적하는 HashSet
-    let processedStones: HashSet<Intersection> = new HashSet();
+    const processedStones: HashSet<Intersection> = new HashSet();
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor && neighbor.stone === otherPlayer) {
         // 이미 처리된 돌은 건너뛰기
         if (processedStones.includes(neighbor)) continue;
@@ -770,7 +769,7 @@ export class Game {
     let captured = true;
     let group = [intersection];
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor === null) {
         // 가장자리인 경우는 항상 잡힘
         captured = true;
@@ -819,7 +818,9 @@ export class Game {
     
     // Create HashSet only with non-null intersections
     const validNeighbors = adjacentPositions.filter((int): int is Intersection => int !== null);
-    const neighbors = new HashSet<Intersection>(...validNeighbors);
+    
+    // neighbors 변수 사용하지 않으므로 제거 (hashSet이 반환값으로 사용되지 않음)
+    new HashSet<Intersection>(...validNeighbors);
     
     return adjacentPositions;
   }
@@ -849,7 +850,7 @@ export class Game {
 
     this.claimedTerritories.push(territory);
 
-    for (let int of territory.region) {
+    for (const int of territory.region) {
       this.claimedTerritoryLookup.insert(int);
     }
 
@@ -870,8 +871,8 @@ export class Game {
    */
   private getAllApparentTerritories(exclude: HashSet<Intersection> = new HashSet()): Territory[] {
     const { xLines, yLines } = this;
-    let visited = new HashSet<Intersection>();
-    let territories: Territory[] = [];
+    const visited = new HashSet<Intersection>();
+    const territories: Territory[] = [];
 
     for (let x = 0; x < xLines; x++) {
       for (let y = 0; y < yLines; y++) {
@@ -916,7 +917,7 @@ export class Game {
 
     let territory = new TerritoryImpl(Stone.None, [intersection]);
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor === null) {
         // 가장자리
         continue;
@@ -975,7 +976,7 @@ export class Game {
 
     let territory = new TerritoryImpl(mode, [intersection]);
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor === null) {
         // 가장자리
         continue;

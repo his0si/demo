@@ -86,7 +86,7 @@ export default function GameBoard() {
             label = nextNumber.toString();
           }
 
-          game.addMarker(x, y, currentTool, label);
+          //game.addMarker(x, y, currentTool, label);
         }
       }
     }

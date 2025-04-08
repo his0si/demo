@@ -227,7 +227,7 @@ const LandingPage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-gray-900">종이에서 디지털로</h3>
               </div>
               <p className="text-gray-600 mb-6">
-                "그때 그 한 수가 어땠더라..." 이제 더 이상 흐릿한 기억이나 바래진 종이 기보에 의존하지 마세요. 
+                &quot;그때 그 한 수가 어땠더라...&quot; 이제 더 이상 흐릿한 기억이나 바래진 종이 기보에 의존하지 마세요. 
                 소중한 기보들이 언제든 쉽게 찾아볼 수 있는 디지털 자산으로 영원히 보존됩니다.
               </p>
               <div className="w-full h-[200px] bg-gray-50 rounded-xl relative overflow-hidden">

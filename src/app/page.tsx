@@ -18,20 +18,6 @@ export default function Home() {
     }
   }, [status, session, isGameStarted, startGame]);
   
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setUploadedFile(e.target.files[0]);
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          loadSGF(event.target.result as string);
-        }
-      };
-      reader.readAsText(e.target.files[0]);
-    }
-  }, [loadSGF]);
-  
   const handleLogoClick = () => {
     signOut({ redirect: true, callbackUrl: '/' });
   };

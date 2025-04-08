@@ -81,7 +81,7 @@ export class TerritoryImpl implements Territory {
   }
 
   public merge(territory: Territory): Territory {
-    let merged = new TerritoryImpl(Stone.None);
+    const merged = new TerritoryImpl(Stone.None);
 
     if(this.owner === Stone.None) {
       merged.owner = territory.owner;
@@ -144,7 +144,7 @@ export class GameStateImpl implements GameState {
   }
 
   public toString(): string {
-    const transpose = (array: any[][]) => 
+    const transpose = (array: Intersection[][]) => 
       array[0].map((col, i) => array.map(row => row[i]));
 
     const transposed = transpose(this.intersections);
@@ -165,14 +165,15 @@ export class GameStateImpl implements GameState {
   }
 
   public getState(moveNum: number): GameState | null {
-    let state: GameState = this;
+    // this를 로컬 변수에 할당하는 대신 직접 사용
+    let currentState: GameState = this;
 
-    while(state.moveNum > moveNum) {
-      if (!state?.prevGameState) return null;
-      state = state.prevGameState;
+    while(currentState.moveNum > moveNum) {
+      if (!currentState?.prevGameState) return null;
+      currentState = currentState.prevGameState;
     }
 
-    return state;
+    return currentState;
   }
 }
 
@@ -290,7 +291,7 @@ export class Game {
       const coord = moveMatch ? moveMatch[2] : '';
       
       // 보드 상태 복사 대신 기존 배열 재사용
-      let newBoardState = game.copyIntersections();
+      const newBoardState = game.copyIntersections();
       
       if (moveMatch && coord !== '') {
         const x = charToPos(coord[0]);
@@ -424,7 +425,7 @@ export class Game {
    * SGF 형식으로 변환
    */
   public getSGF(): string {
-    let sgfNodes = [
+    const sgfNodes = [
       ";GM[1]FF[4]CA[UTF-8]AP[Goggle]SZ[19]"
     ];
  
@@ -512,7 +513,7 @@ export class Game {
   public copyIntersections(): Intersection[][] {
     const { xLines, yLines, intersections } = this;
 
-    let ints = new Array(xLines);
+    const ints = new Array(xLines);
     for(let x = 0; x < xLines; x++) {
       ints[x] = new Array(yLines);
 
@@ -629,8 +630,8 @@ export class Game {
   private endGame(): void {
     this.setTurn(Stone.None);
     
-    // 영역 계산
-    const territories = this.getAllTerritories();
+    // 영역 계산 - 사용하지 않는 변수 제거
+    this.getAllTerritories();
     this.notifyStateChange();
   }
 
@@ -734,7 +735,7 @@ export class Game {
     const otherPlayer = this.getOtherPlayer();
     const intersection = this.intersections[xPos][yPos];
     const neighbors = this.getAdjacentNeighbors(intersection);
-    let capturedGroups: Intersection[][] = [];
+    const capturedGroups: Intersection[][] = [];
 
     // 이미 처리된 돌을 추적하는 HashSet
     let processedStones: HashSet<Intersection> = new HashSet();

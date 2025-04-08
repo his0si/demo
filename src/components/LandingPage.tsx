@@ -66,7 +66,7 @@ const LandingPage: React.FC = () => {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-gray-600 mt-6 max-w-lg leading-relaxed">
-              모든 기보는 나만의 "이야기"입니다.<br />
+              모든 기보는 나만의 &quot;이야기&quot; 입니다.<br />
               Goggle을 통해 나만의 이야기를 간직하고, 분석해보세요!<br />
             </p>
             <div className="flex gap-4 mt-10">

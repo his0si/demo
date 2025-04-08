@@ -1,8 +1,8 @@
 // src/lib/types.ts
 import { MutableRefObject } from 'react';
 
-export type SVGSelection = d3.Selection<d3.BaseType, {}, HTMLElement, any>;
-export type Selection = d3.Selection<SVGGElement, {}, HTMLElement, any>;
+export type SVGSelection = d3.Selection<d3.BaseType, unknown, HTMLElement, unknown>;
+export type Selection = d3.Selection<SVGGElement, unknown, HTMLElement, unknown>;
 
 export enum Stone {
   Unknown = -1,

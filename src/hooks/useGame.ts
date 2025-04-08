@@ -1,5 +1,5 @@
 // src/hooks/useGame.ts
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Game } from '@/lib/game';
 import { Stone } from '@/lib/types';
 
@@ -8,7 +8,7 @@ export default function useGame() {
   const [game, setGame] = useState<Game | null>(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [isGameEnded, setIsGameEnded] = useState(false);
-  const [boardState, setBoardState] = useState<any>(null);
+  const [boardState, setBoardState] = useState<Stone[][]>(null);
   const [blackScore, setBlackScore] = useState(0);
   const [whiteScore, setWhiteScore] = useState(0);
   const [blackTerritory, setBlackTerritory] = useState(0);
@@ -78,7 +78,7 @@ export default function useGame() {
       setMarkers(loadedGame.markers ?? []);
       setComment(loadedGame.getGameState()?.comment ?? '');
     }
-  }, []);
+  }, [updateGameState]);
   
   // 돌 놓기
   const makeMove = useCallback((x: number, y: number) => {
@@ -127,8 +127,8 @@ export default function useGame() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.sgf';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
+    input.onchange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {

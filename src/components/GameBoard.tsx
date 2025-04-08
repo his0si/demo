@@ -11,7 +11,6 @@ export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
   
   const {
-    isGameStarted,
     isGameEnded,
     boardState,
     blackScore,

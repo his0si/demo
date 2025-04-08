@@ -3,12 +3,7 @@
 
 import Link from 'next/link';
 
-interface NavBarProps {
-  isInGame: boolean;
-  onNewGame: () => void;
-}
-
-export default function NavBar({ isInGame, onNewGame }: NavBarProps) {
+export default function NavBar() {
   return (
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex justify-between items-center">

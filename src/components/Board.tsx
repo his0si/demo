@@ -2,11 +2,11 @@
 
 import { useRef, useEffect } from 'react';
 import * as d3 from 'd3';
-import { Stone as StoneEnum, STONE_CLASSES } from '@/lib/types';
+import { Stone as StoneEnum, STONE_CLASSES, Intersection } from '@/lib/types';
 
 interface BoardProps {
   size: number;
-  boardState: any[][];
+  boardState: Intersection[][];
   lastMove: {x: number, y: number} | null;
   isGameEnded: boolean;
   onIntersectionClick: (x: number, y: number) => void;
@@ -144,10 +144,10 @@ export default function Board({
     
     // 마커 그리기
     if (markers && markers.length > 0) {
-      markers = markers.map(m => ({ ...m, type: normalizeType(m.type) }));
+      const normalizedMarkers = markers.map(m => ({ ...m, type: normalizeType(m.type) }));
       const markerGroup = svg.append('g').attr('class', 'markers');
 
-      markers.forEach(marker => {
+      normalizedMarkers.forEach(marker => {
         const cx = stoneRadius + marker.x * (width / size);
         const cy = stoneRadius + marker.y * (height / size);
 

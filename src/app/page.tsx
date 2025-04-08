@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import LandingPage from '@/components/LandingPage';
 import GameBoard from '@/components/GameBoard';

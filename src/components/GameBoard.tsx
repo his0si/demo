@@ -28,7 +28,7 @@ export default function GameBoard() {
     startGame,
     game,
     comment,
-    addMarker
+    // addMarker 제거 - 사용하지 않음
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
@@ -70,23 +70,25 @@ export default function GameBoard() {
           }
         } else {
           if (!game) return;
-          let label: string | undefined = undefined;
-
+          // 이 부분에서 label을 선언하고 할당하지만 사용하지 않고 있습니다.
+          // game.addMarker에 사용해야 하는데 주석 처리되어 있음
+          
+          // 주석 처리된 코드를 활성화하여 label 사용
           if (currentTool === 'letter') {
             const allLetters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'];
             const usedLabels = game.markers.filter(m => m.type === 'letter').map(m => m.label);
-            label = allLetters.find(ch => !usedLabels.includes(ch)) ?? '?';
-          }
-
-          if (currentTool === 'number') {
+            const nextLabel = allLetters.find(ch => !usedLabels.includes(ch)) ?? '?';
+            game.addMarker(x, y, currentTool, nextLabel);
+          } else if (currentTool === 'number') {
             const usedNumbers = game.markers
               .filter(m => m.type === 'number')
               .map(m => parseInt(m.label || '0'));
             const nextNumber = 1 + Math.max(0, ...usedNumbers);
-            label = nextNumber.toString();
+            game.addMarker(x, y, currentTool, nextNumber.toString());
+          } else {
+            // 다른 도구 (triangle, square, cross 등)
+            game.addMarker(x, y, currentTool);
           }
-
-          //game.addMarker(x, y, currentTool, label);
         }
       }
     }

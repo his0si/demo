@@ -165,16 +165,17 @@ export class GameStateImpl implements GameState {
   }
 
   public getState(moveNum: number): GameState | null {
-    // this를 직접 사용하여 에러 해결
-    let currentState: GameState | null = this;
-
-    while(currentState && currentState.moveNum > moveNum) {
-      currentState = currentState.prevGameState;
+    // this를 직접 사용하여 재귀적으로 구현
+    if (this.moveNum <= moveNum) {
+      return this;
     }
-
-    return currentState;
+    
+    if (!this.prevGameState) {
+      return null;
+    }
+    
+    return this.prevGameState.getState(moveNum);
   }
-}
 
 /**
  * 게임 클래스 구현

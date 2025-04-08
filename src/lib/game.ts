@@ -176,7 +176,7 @@ export class GameStateImpl implements GameState {
     
     return this.prevGameState.getState(moveNum);
   }
-
+}
 /**
  * 게임 클래스 구현
  * 핵심 바둑 게임 로직을 포함

@@ -1,6 +1,24 @@
 import NextAuth from "next-auth";
 import NaverProvider from "next-auth/providers/naver";
 import GoogleProvider from "next-auth/providers/google";
+import { JWT } from "next-auth/jwt";
+import { Session } from "next-auth";
+
+// 타입 확장을 위한 인터페이스 정의
+interface ExtendedToken extends JWT {
+  accessToken?: string;
+  provider?: string;
+}
+
+interface ExtendedSession extends Session {
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    accessToken?: string;
+    provider?: string;
+  }
+}
 
 const handler = NextAuth({
   providers: [
@@ -30,9 +48,15 @@ const handler = NextAuth({
     },
     async session({ session, token }) {
       // 세션에 추가 정보 포함
-      session.user.accessToken = token.accessToken;
-      session.user.provider = token.provider;
-      return session;
+      const extendedToken = token as ExtendedToken;
+      const extendedSession = session as ExtendedSession;
+      
+      if (extendedSession.user) {
+        extendedSession.user.accessToken = extendedToken.accessToken;
+        extendedSession.user.provider = extendedToken.provider;
+      }
+      
+      return extendedSession;
     },
   },
 });

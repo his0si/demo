@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Board from './Board';
 import GameControls from './GameControls';
 import useGame from '@/hooks/useGame';
-import RightSidebar from './RightSidebar';
+import RightSidebar, { GameRef } from './RightSidebar'; // GameRef import 추가
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
@@ -31,7 +31,8 @@ export default function GameBoard() {
     setComment,
   } = useGame();
 
-  const gameRef = useRef<Game | null>(null);
+  // Game | null 타입을 GameRef 타입으로 변경
+  const gameRef = useRef<GameRef | null>(null);
   
   // 컴포넌트가 마운트되면 자동으로 게임을 시작합니다
   useEffect(() => {
@@ -42,13 +43,14 @@ export default function GameBoard() {
   
   useEffect(() => {
     if (game) {
-      gameRef.current = game;
+      // Game 타입을 GameRef 타입으로 캐스팅
+      gameRef.current = game as unknown as GameRef;
     }
   }, [game]);
 
   useEffect(() => {
-    if (gameRef.current) {
-      gameRef.current.markers = game?.getGameState()?.markers ?? [];
+    if (gameRef.current && game) {
+      (gameRef.current as any).markers = game.getGameState()?.markers ?? [];
     }
   }, [game]);
 
@@ -112,7 +114,7 @@ export default function GameBoard() {
             onUndo={undo}
             onRedo={redo}
             onSave={() => {
-              const sgf = gameRef.current?.saveSGF();
+              const sgf = (gameRef.current as any)?.saveSGF?.();
               if (sgf) {
                 const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
                 FileSaver.saveAs(blob, 'game.sgf');
@@ -142,7 +144,7 @@ export default function GameBoard() {
             onUndo={undo}
             onRedo={redo}
             onSave={() => {
-              const sgf = gameRef.current?.saveSGF();
+              const sgf = (gameRef.current as any)?.saveSGF?.();
               if (sgf) {
                 const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
                 FileSaver.saveAs(blob, 'game.sgf');

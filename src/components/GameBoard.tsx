@@ -11,7 +11,7 @@ export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
   
   const {
-    isGameStarted,
+    // isGameStarted,
     isGameEnded,
     boardState,
     blackScore,
@@ -19,7 +19,7 @@ export default function GameBoard() {
     blackTerritory,
     whiteTerritory,
     currentPlayer,
-    lastMove,
+    // lastMove,
     makeMove,
     pass,
     undo,
@@ -30,7 +30,7 @@ export default function GameBoard() {
     game,
     comment,
     setComment,
-    addMarker
+    // addMarker
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);

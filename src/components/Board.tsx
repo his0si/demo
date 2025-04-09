@@ -6,7 +6,7 @@ import { Stone as StoneEnum, STONE_CLASSES } from '@/lib/types';
 
 interface BoardProps {
   size: number;
-  boardState: any[][];
+  boardState: { xPos: number; yPos: number; stone: number }[][];
   lastMoveMarkers?: { current?: { xPos: number; yPos: number; stone: number }; next?: { xPos: number; yPos: number; stone: number } };
   isGameEnded: boolean;
   onIntersectionClick: (x: number, y: number) => void;
@@ -144,10 +144,10 @@ export default function Board({
     
     // 마커 그리기
     if (markers && markers.length > 0) {
-      markers = markers.map(m => ({ ...m, type: normalizeType(m.type) }));
+      const normalizedMarkers = markers.map(m => ({ ...m, type: normalizeType(m.type) }));
       const markerGroup = svg.append('g').attr('class', 'markers');
 
-      markers.forEach(marker => {
+      normalizedMarkers.forEach(marker => {
         const cx = stoneRadius + marker.x * (width / size);
         const cy = stoneRadius + marker.y * (height / size);
 

@@ -81,7 +81,7 @@ export class TerritoryImpl implements Territory {
   }
 
   public merge(territory: Territory): Territory {
-    let merged = new TerritoryImpl(Stone.None);
+    const merged = new TerritoryImpl(Stone.None);
 
     if(this.owner === Stone.None) {
       merged.owner = territory.owner;
@@ -144,8 +144,8 @@ export class GameStateImpl implements GameState {
   }
 
   public toString(): string {
-    const transpose = (array: any[][]) => 
-      array[0].map((col, i) => array.map(row => row[i]));
+    const transpose = (array: Intersection[][]): Intersection[][] =>
+      array[0].map((_, i) => array.map(row => row[i]));
 
     const transposed = transpose(this.intersections);
     
@@ -165,8 +165,8 @@ export class GameStateImpl implements GameState {
   }
 
   public getState(moveNum: number): GameState | null {
-    let state: GameState = this;
-
+    let state = this as GameState;
+    
     while(state.moveNum > moveNum) {
       if (!state?.prevGameState) return null;
       state = state.prevGameState;
@@ -211,7 +211,7 @@ export class Game {
    * 바둑판 초기화
    */
   static initIntersections(xLines: number = 19, yLines: number = 19): Intersection[][] {
-    let ints = new Array(xLines);
+    const ints = new Array(xLines);
     for(let x = 0; x < xLines; x++) {
       ints[x] = new Array(yLines);
 
@@ -249,7 +249,7 @@ export class Game {
   
     // 이전 게임 상태를 추적하여 불필요한 참조 줄이기
     let prevState: GameState | null = game.gameState;
-    let boardState = game.copyIntersections(); // 현재 보드 상태 복사본
+    // let boardState = game.copyIntersections(); // 현재 보드 상태 복사본
   
     for (const node of nodes) {
       const moveMatch = node.match(movePattern);
@@ -308,7 +308,7 @@ export class Game {
       const coord = moveMatch ? moveMatch[2] : '';
       
       // 보드 상태 복사 대신 기존 배열 재사용
-      let newBoardState = game.copyIntersections();
+      const newBoardState = game.copyIntersections();
       
       if (moveMatch && coord !== '') {
         const x = charToPos(coord[0]);
@@ -392,7 +392,7 @@ export class Game {
       }
       
       prevState = newState;
-      boardState = newBoardState;
+      // boardState = newBoardState;
       
       if (!game.gameState || game.gameState.moveNum === 0) {
         game.gameState = newState;
@@ -442,7 +442,7 @@ export class Game {
    * SGF 형식으로 변환
    */
   public getSGF(): string {
-    let sgfNodes = [
+    const sgfNodes = [
       ";GM[1]FF[4]CA[UTF-8]AP[Goggle]SZ[19]"
     ];
  
@@ -474,7 +474,7 @@ export class Game {
           LB: [] as string[], // label
         };
  
-        const markerMap = new Map<string, any>();
+        const markerMap = new Map<string, { x: number; y: number; type: string; label?: string; moveNum?: number }>();
         for (const marker of (state.markers ?? [])) {
           const key = `${marker.x}-${marker.y}-${marker.type}-${marker.label || ''}-${marker.moveNum || ''}`;
           if (!markerMap.has(key)) {
@@ -530,7 +530,7 @@ export class Game {
   public copyIntersections(): Intersection[][] {
     const { xLines, yLines, intersections } = this;
 
-    let ints = new Array(xLines);
+    const ints = new Array(xLines);
     for(let x = 0; x < xLines; x++) {
       ints[x] = new Array(yLines);
 
@@ -648,7 +648,7 @@ export class Game {
     this.setTurn(Stone.None);
     
     // 영역 계산
-    const territories = this.getAllTerritories();
+    // const territories = this.getAllTerritories();
     this.notifyStateChange();
   }
 
@@ -752,12 +752,12 @@ export class Game {
     const otherPlayer = this.getOtherPlayer();
     const intersection = this.intersections[xPos][yPos];
     const neighbors = this.getAdjacentNeighbors(intersection);
-    let capturedGroups: Intersection[][] = [];
+    const capturedGroups: Intersection[][] = [];
 
     // 이미 처리된 돌을 추적하는 HashSet
-    let processedStones: HashSet<Intersection> = new HashSet();
+    const processedStones: HashSet<Intersection> = new HashSet();
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor && neighbor.stone === otherPlayer) {
         // 이미 처리된 돌은 건너뛰기
         if (processedStones.includes(neighbor)) continue;
@@ -787,7 +787,7 @@ export class Game {
     let captured = true;
     let group = [intersection];
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor === null) {
         // 가장자리인 경우는 항상 잡힘
         captured = true;
@@ -835,8 +835,8 @@ export class Game {
     ];
     
     // Create HashSet only with non-null intersections
-    const validNeighbors = adjacentPositions.filter((int): int is Intersection => int !== null);
-    const neighbors = new HashSet<Intersection>(...validNeighbors);
+    // const validNeighbors = adjacentPositions.filter((int): int is Intersection => int !== null);
+    // const neighbors = new HashSet<Intersection>(...validNeighbors);
     
     return adjacentPositions;
   }
@@ -866,7 +866,7 @@ export class Game {
 
     this.claimedTerritories.push(territory);
 
-    for (let int of territory.region) {
+    for (const int of territory.region) {
       this.claimedTerritoryLookup.insert(int);
     }
 
@@ -887,8 +887,8 @@ export class Game {
    */
   private getAllApparentTerritories(exclude: HashSet<Intersection> = new HashSet()): Territory[] {
     const { xLines, yLines } = this;
-    let visited = new HashSet<Intersection>();
-    let territories: Territory[] = [];
+    const visited = new HashSet<Intersection>();
+    const territories: Territory[] = [];
 
     for (let x = 0; x < xLines; x++) {
       for (let y = 0; y < yLines; y++) {
@@ -933,7 +933,7 @@ export class Game {
 
     let territory = new TerritoryImpl(Stone.None, [intersection]);
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor === null) {
         // 가장자리
         continue;
@@ -992,7 +992,7 @@ export class Game {
 
     let territory = new TerritoryImpl(mode, [intersection]);
     
-    for (let neighbor of neighbors) {
+    for (const neighbor of neighbors) {
       if (neighbor === null) {
         // 가장자리
         continue;

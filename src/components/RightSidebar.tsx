@@ -1,3 +1,5 @@
+import { Game } from '@/lib/game';
+
 export interface GameState {
   comment: string;
   [key: string]: unknown; // More type-safe than 'any' while still allowing dynamic properties
@@ -14,7 +16,7 @@ export default function RightSidebar({
 }: {
   comment: string;
   setComment: (value: string) => void;
-  gameRef: React.RefObject<GameRef>;
+  gameRef: React.RefObject<Game | null>;
 }) {
   return (
     <aside className="w-64 p-4 border-l bg-gray-100 flex flex-col min-h-screen">
@@ -42,8 +44,9 @@ export default function RightSidebar({
             onChange={(e) => {
               const newComment = e.target.value;
               setComment(newComment);
-              if (gameRef.current?.getGameState()) {
-                gameRef.current.getGameState().comment = newComment;
+              const state = gameRef.current?.getGameState();
+              if (state) {
+                state.comment = newComment;
               }
             }}
           />

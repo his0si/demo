@@ -23,7 +23,7 @@ export default function NavBar({ onLogoClick }: NavBarProps) {
       className="w-full bg-white/90 backdrop-blur-md z-50 px-6 py-5 border-b border-gray-100"
     >
       <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <p className="text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300">
+        <p className="text-2xl font-bold tracking-tight text-gray-900">
           goggle<span className="text-sky-400">.</span>
         </p>
         <div className="flex items-center gap-8">

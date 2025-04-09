@@ -1,11 +1,18 @@
 'use client';
-import { Game } from '@/lib/game';
 import * as FileSaver from 'file-saver';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Board from './Board';
 import GameControls from './GameControls';
 import useGame from '@/hooks/useGame';
 import RightSidebar, { GameRef } from './RightSidebar'; // GameRef import 추가
+
+// Game 타입의 확장 인터페이스 정의
+interface ExtendedGameRef extends GameRef {
+  markers: Array<{x: number; y: number; type: string; label?: string; moveNum?: number}>;
+  saveSGF: () => string;
+  addMarker: (x: number, y: number, type: string, label?: string) => void;
+  notifyStateChange: () => void;
+}
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
@@ -31,8 +38,8 @@ export default function GameBoard() {
     setComment,
   } = useGame();
 
-  // Game | null 타입을 GameRef 타입으로 변경
-  const gameRef = useRef<GameRef | null>(null);
+  // ExtendedGameRef 타입으로 변경
+  const gameRef = useRef<ExtendedGameRef | null>(null);
   
   // 컴포넌트가 마운트되면 자동으로 게임을 시작합니다
   useEffect(() => {
@@ -43,14 +50,14 @@ export default function GameBoard() {
   
   useEffect(() => {
     if (game) {
-      // Game 타입을 GameRef 타입으로 캐스팅
-      gameRef.current = game as unknown as GameRef;
+      // Game 타입을 ExtendedGameRef 타입으로 캐스팅
+      gameRef.current = game as unknown as ExtendedGameRef;
     }
   }, [game]);
 
   useEffect(() => {
     if (gameRef.current && game) {
-      (gameRef.current as any).markers = game.getGameState()?.markers ?? [];
+      gameRef.current.markers = game.getGameState()?.markers ?? [];
     }
   }, [game]);
 
@@ -98,6 +105,16 @@ export default function GameBoard() {
       </div>
     );
   }
+
+  const handleSaveGame = () => {
+    if (gameRef.current?.saveSGF) {
+      const sgf = gameRef.current.saveSGF();
+      if (sgf) {
+        const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
+        FileSaver.saveAs(blob, 'game.sgf');
+      }
+    }
+  };
   
   return (
     <div className="flex gap-4">
@@ -113,13 +130,7 @@ export default function GameBoard() {
             onPass={pass}
             onUndo={undo}
             onRedo={redo}
-            onSave={() => {
-              const sgf = (gameRef.current as any)?.saveSGF?.();
-              if (sgf) {
-                const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                FileSaver.saveAs(blob, 'game.sgf');
-              }
-            }}
+            onSave={handleSaveGame}
             onLoad={importSGF}
             showToolButtons={false}
           />
@@ -143,13 +154,7 @@ export default function GameBoard() {
             onPass={pass}
             onUndo={undo}
             onRedo={redo}
-            onSave={() => {
-              const sgf = (gameRef.current as any)?.saveSGF?.();
-              if (sgf) {
-                const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                FileSaver.saveAs(blob, 'game.sgf');
-              }
-            }}
+            onSave={handleSaveGame}
             onLoad={importSGF}
             onSelectTool={setCurrentTool}
             selectedTool={currentTool}

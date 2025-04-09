@@ -1,14 +1,14 @@
 // src/hooks/useGame.ts
 import { useState, useCallback, useRef } from 'react';
 import { Game } from '@/lib/game';
-import { Stone } from '@/lib/types';
+import { Stone, Intersection } from '@/lib/types';
 
 export default function useGame() {
   const [comment, setComment] = useState('');
   const [game, setGame] = useState<Game | null>(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [isGameEnded, setIsGameEnded] = useState(false);
-  const [boardState, setBoardState] = useState<Stone[][]>([]);
+  const [boardState, setBoardState] = useState<Intersection[][] | null>(null);
   const [blackScore, setBlackScore] = useState(0);
   const [whiteScore, setWhiteScore] = useState(0);
   const [blackTerritory, setBlackTerritory] = useState(0);
@@ -23,8 +23,7 @@ export default function useGame() {
     if (!gameRef.current) return;
     
     const game = gameRef.current;
-    // Intersection[][]에서 Stone[][]로 변환
-    setBoardState(game.intersections.map(row => row.map(intersection => intersection.stone)));
+    setBoardState([...game.intersections]);
     setBlackScore(game.getBlackScore());
     setWhiteScore(game.getWhiteScore());
     setCurrentPlayer(game.getTurn());
@@ -54,8 +53,7 @@ export default function useGame() {
     setIsGameStarted(true);
     setIsGameEnded(false);
     setCurrentPlayer(Stone.Black);
-    // Intersection[][]에서 Stone[][]로 변환
-    setBoardState(newGame.intersections.map(row => row.map(intersection => intersection.stone)));
+    setBoardState([...newGame.intersections]);
     setBlackScore(0);
     setWhiteScore(0);
     setBlackTerritory(0);
@@ -71,8 +69,7 @@ export default function useGame() {
       gameRef.current = loadedGame;
       setGame(loadedGame);
       setIsGameStarted(true);
-      // Intersection[][]에서 Stone[][]로 변환
-      setBoardState(loadedGame.intersections.map(row => row.map(intersection => intersection.stone)));
+      setBoardState([...loadedGame.intersections]);
       setBlackScore(loadedGame.getBlackScore());
       setWhiteScore(loadedGame.getWhiteScore());
       setCurrentPlayer(loadedGame.getTurn());
@@ -130,12 +127,9 @@ export default function useGame() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.sgf';
-    input.onchange = (event: Event) => {
-      // 타입 단언(type assertion)을 사용하여 HTMLInputElement와 FileList에 접근
-      const target = event.target as HTMLInputElement;
-      const file = target.files?.[0];
+    input.onchange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
       if (!file) return;
-      
       const reader = new FileReader();
       reader.onload = () => {
         const sgfContent = reader.result as string;
@@ -187,6 +181,7 @@ export default function useGame() {
     markers,
     setMarkers,
     comment,
+    setComment,
     addMarker,
   };
 }

@@ -1,6 +1,8 @@
 // src/lib/types.ts
 import { MutableRefObject } from 'react';
+import * as d3 from 'd3';
 
+// d3 Selection 타입 수정 - 빈 객체({}) 대신 object 사용, any 대신 unknown 사용
 export type SVGSelection = d3.Selection<d3.BaseType, unknown, HTMLElement, unknown>;
 export type Selection = d3.Selection<SVGGElement, unknown, HTMLElement, unknown>;
 

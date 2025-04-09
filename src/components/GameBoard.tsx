@@ -6,8 +6,6 @@ import Board from './Board';
 import GameControls from './GameControls';
 import useGame from '@/hooks/useGame';
 import RightSidebar from './RightSidebar';
-import { Intersection, Stone } from '@/lib/types';
-import { IntersectionImpl } from '@/lib/game';
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
@@ -30,7 +28,7 @@ export default function GameBoard() {
     startGame,
     game,
     comment,
-    // addMarker 제거 - 사용하지 않음
+    setComment,
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
@@ -54,15 +52,6 @@ export default function GameBoard() {
     }
   }, [game]);
 
-  // Stone[][] 타입을 Intersection[][] 타입으로 변환하는 함수
-  const convertBoardState = useCallback((stoneBoard: Stone[][] | null): Intersection[][] => {
-    if (!stoneBoard) return [];
-    
-    return stoneBoard.map((row, x) => 
-      row.map((stone, y) => new IntersectionImpl(x, y, stone))
-    );
-  }, []);
-
   const handleIntersectionClick = useCallback((x: number, y: number) => {
     if (isGameEnded) {
       claimTerritory(x, y);
@@ -72,31 +61,29 @@ export default function GameBoard() {
       } else {
         const existing = game?.getGameState()?.markers?.find(m => m.x === x && m.y === y);
         if (existing?.type === currentTool) {
-          // Toggle off
           if (!game) return;
           game.markers = game.markers.filter(m => !(m.x === x && m.y === y && m.type === currentTool));
           const state = game.getGameState();
           if (state) {
             state.markers = [...game.markers];
           }
+          game.notifyStateChange();
         } else {
           if (!game) return;
-          
+          let label: string | undefined = undefined;
           if (currentTool === 'letter') {
             const allLetters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'];
             const usedLabels = game.markers.filter(m => m.type === 'letter').map(m => m.label);
-            const nextLabel = allLetters.find(ch => !usedLabels.includes(ch)) ?? '?';
-            game.addMarker(x, y, currentTool, nextLabel);
-          } else if (currentTool === 'number') {
+            label = allLetters.find(ch => !usedLabels.includes(ch)) ?? '?';
+          }
+          if (currentTool === 'number') {
             const usedNumbers = game.markers
               .filter(m => m.type === 'number')
               .map(m => parseInt(m.label || '0'));
             const nextNumber = 1 + Math.max(0, ...usedNumbers);
-            game.addMarker(x, y, currentTool, nextNumber.toString());
-          } else {
-            // 다른 도구 (triangle, square, cross 등)
-            game.addMarker(x, y, currentTool);
+            label = nextNumber.toString();
           }
+          game.addMarker(x, y, currentTool, label);
         }
       }
     }
@@ -110,22 +97,40 @@ export default function GameBoard() {
     );
   }
   
-  // boardState를 Intersection[][] 타입으로 변환
-  const intersectionBoardState = convertBoardState(boardState);
-  
   return (
     <div className="flex gap-4">
       <div className="flex-1">
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto p-4 flex flex-col">
+          <GameControls
+            currentPlayer={currentPlayer}
+            blackScore={blackScore}
+            whiteScore={whiteScore}
+            blackTerritory={blackTerritory}
+            whiteTerritory={whiteTerritory}
+            isGameEnded={isGameEnded}
+            onPass={pass}
+            onUndo={undo}
+            onRedo={redo}
+            onSave={() => {
+              const sgf = gameRef.current?.saveSGF();
+              if (sgf) {
+                const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
+                FileSaver.saveAs(blob, 'game.sgf');
+              }
+            }}
+            onLoad={importSGF}
+            showToolButtons={false}
+          />
+
           <Board
             size={19}
-            boardState={intersectionBoardState}
+            boardState={boardState}
             lastMove={lastMove}
             isGameEnded={isGameEnded}
             onIntersectionClick={handleIntersectionClick}
             markers={game?.getGameState()?.markers ?? []}
-          />
-          
+          />  
+
           <GameControls
             currentPlayer={currentPlayer}
             blackScore={blackScore}
@@ -146,10 +151,11 @@ export default function GameBoard() {
             onLoad={importSGF}
             onSelectTool={setCurrentTool}
             selectedTool={currentTool}
+            showOnlyToolButtons={true}
           />
         </div>
       </div>
-      <RightSidebar comment={comment} />
+      <RightSidebar comment={comment} setComment={setComment} gameRef={gameRef} />
     </div>
   );
 }

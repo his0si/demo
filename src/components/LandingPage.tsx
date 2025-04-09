@@ -28,7 +28,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <button
             onClick={scrollToTop}
-            className="text-2xl font-extrabold tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
+            className="text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
           >
             goggle<span className="text-sky-400">.</span>
           </button>
@@ -386,7 +386,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-6 md:mb-0">
-              <p className="text-xl font-bold tracking-tight text-gray-900">
+              <p className="text-xl tracking-tight text-gray-900">
                 goggle<span className="text-sky-400">.</span>
               </p>
               <p className="text-gray-500 mt-2">

@@ -2,11 +2,18 @@
 
 import { useRef, useEffect } from 'react';
 import * as d3 from 'd3';
-import { Stone as StoneEnum, STONE_CLASSES, Intersection } from '@/lib/types';
+import { Stone as StoneEnum, STONE_CLASSES } from '@/lib/types';
+
+// 보드 상태에 대한 타입 정의
+interface BoardStone {
+  stone: StoneEnum;
+  xPos: number;
+  yPos: number;
+}
 
 interface BoardProps {
   size: number;
-  boardState: Intersection[][];
+  boardState: BoardStone[][];
   lastMove: {x: number, y: number} | null;
   isGameEnded: boolean;
   onIntersectionClick: (x: number, y: number) => void;
@@ -119,7 +126,7 @@ export default function Board({
     
     // 돌 그리기
     const stones = svg.append('g').attr('class', 'stones');
-    const allIntersections = [];
+    const allIntersections: BoardStone[] = [];
     
     // 교차점 데이터 평탄화
     for (let x = 0; x < size; x++) {
@@ -144,7 +151,10 @@ export default function Board({
     
     // 마커 그리기
     if (markers && markers.length > 0) {
-      const normalizedMarkers = markers.map(m => ({ ...m, type: normalizeType(m.type) }));
+      const normalizedMarkers = markers.map(m => ({ 
+        ...m, 
+        type: normalizeType(m.type) 
+      }));
       const markerGroup = svg.append('g').attr('class', 'markers');
 
       normalizedMarkers.forEach(marker => {
@@ -170,7 +180,7 @@ export default function Board({
             .attr('fill', 'none');
         } else if (marker.type === 'triangle') {
           const path = d3.path();
-          const r = stoneRadius / 2.2;
+          const r = stoneRadius / 1.6;
           path.moveTo(cx, cy - r);
           path.lineTo(cx - r * Math.sin(Math.PI / 3), cy + r / 2);
           path.lineTo(cx + r * Math.sin(Math.PI / 3), cy + r / 2);
@@ -186,14 +196,14 @@ export default function Board({
             .attr('y1', cy - stoneRadius / 2)
             .attr('x2', cx + stoneRadius / 2)
             .attr('y2', cy + stoneRadius / 2)
-            .attr('stroke', 'gray')
+            .attr('stroke', 'yellow')
             .attr('stroke-width', 2);
           markerGroup.append('line')
             .attr('x1', cx - stoneRadius / 2)
             .attr('y1', cy + stoneRadius / 2)
             .attr('x2', cx + stoneRadius / 2)
             .attr('y2', cy - stoneRadius / 2)
-            .attr('stroke', 'gray')
+            .attr('stroke', 'yellow')
             .attr('stroke-width', 2);
         } else if (marker.type === 'letter') {
           markerGroup.append('text')
@@ -209,7 +219,7 @@ export default function Board({
             .attr('y', cy + 4)
             .attr('text-anchor', 'middle')
             .attr('font-size', 18)
-            .attr('fill', 'hotpink')
+            .attr('fill', 'purple')
             .text(marker.label || '1');
         }
       });
@@ -228,7 +238,10 @@ export default function Board({
           .attr('fill', 'transparent')
           .attr('data-x', x)
           .attr('data-y', y)
-          .on('click', () => onIntersectionClick(x, y));
+          .on('click', () => {
+            console.log('[Board] Overlay clicked at:', { x, y });
+            onIntersectionClick(x, y);
+          });
       }
     }
     
@@ -255,7 +268,7 @@ export default function Board({
   }, [boardState, size, lastMove, isGameEnded, stoneRadius, onIntersectionClick, markers]);
   
   return (
-    <div className="w-full flex justify-center my-4">
+    <div className="w-full flex justify-center">
       <svg 
         ref={svgRef} 
         width={width} 

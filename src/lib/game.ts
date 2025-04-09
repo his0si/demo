@@ -165,18 +165,18 @@ export class GameStateImpl implements GameState {
   }
 
   public getState(moveNum: number): GameState | null {
-    // this를 직접 사용하여 재귀적으로 구현
-    if (this.moveNum <= moveNum) {
-      return this;
+    // 'this'를 직접 현재 상태로 취급
+    if (this.moveNum > moveNum) {
+      if (!this.prevGameState) return null;
+      // 재귀적으로 이전 상태에서 찾기
+      return this.prevGameState.getState(moveNum);
     }
     
-    if (!this.prevGameState) {
-      return null;
-    }
-    
-    return this.prevGameState.getState(moveNum);
+    // 현재 상태의 moveNum이 찾는 moveNum과 같거나 작으면 현재 상태를 반환
+    return this;
   }
 }
+
 /**
  * 게임 클래스 구현
  * 핵심 바둑 게임 로직을 포함
@@ -229,6 +229,7 @@ export class Game {
    */
   public static loadSGF(sgfContent: string): Game | null {
     const game = new Game();
+    sgfContent = sgfContent.trim().replace(/\)+$/, '');
     const charToPos = (char: string) => char.charCodeAt(0) - 97;
   
     // Parse board size - 정규식 최적화
@@ -249,8 +250,8 @@ export class Game {
   
     // 이전 게임 상태를 추적하여 불필요한 참조 줄이기
     let prevState: GameState | null = game.gameState;
-    // boardState 변수 사용하지 않으므로 제거
-    let newBoardState = game.copyIntersections(); // 현재 보드 상태 복사본
+    // 현재 보드 상태 추적
+    //let currentBoardState = game.copyIntersections();
   
     for (const node of nodes) {
       const moveMatch = node.match(movePattern);
@@ -258,6 +259,15 @@ export class Game {
     
       // 마커 파싱 - 정규식 재사용
       let markerMatch;
+      // Define a mapping from SGF marker codes to our internal marker types
+      const typeMapping: { [key: string]: string } = {
+        TR: "triangle",
+        SQ: "square",
+        CR: "circle",
+        MA: "cross",
+        LB: "letter"
+      };
+
       while ((markerMatch = markerPattern.exec(node)) !== null) {
         const type = markerMatch[1];
         const coordsStr = markerMatch[2];
@@ -271,13 +281,21 @@ export class Game {
             const label = posMatch[2];
             const x = charToPos(pos[0]);
             const y = charToPos(pos[1]);
-            markers.push({ 
-              x, 
-              y, 
-              type: type === "MA" ? "cross" : type === "CR" ? "circle" : type.toLowerCase(), 
-              label 
+            markers.push({
+              x,
+              y,
+              type: typeMapping[type] || type.toLowerCase(),
+              label
             });
           }
+        }
+      }
+      
+      // 마커 파싱 이후에 node의 moveNum을 각 마커에 할당
+      if (markers.length > 0) {
+        const nodeMoveNum = (prevState ? prevState.moveNum + 1 : 0);
+        for (let i = 0; i < markers.length; i++) {
+          markers[i].moveNum = nodeMoveNum;
         }
       }
       
@@ -292,7 +310,7 @@ export class Game {
       const coord = moveMatch ? moveMatch[2] : '';
       
       // 보드 상태 복사 대신 기존 배열 재사용
-      newBoardState = game.copyIntersections();
+      const newBoardState = game.copyIntersections();
       
       if (moveMatch && coord !== '') {
         const x = charToPos(coord[0]);
@@ -308,12 +326,13 @@ export class Game {
           
           // 포획 로직 효율적으로 실행
           const otherPlayer = color === Stone.Black ? Stone.White : Stone.Black;
-          const capturedGroups = [];
+          const capturedGroups: Intersection[][] = [];
           
           // 이웃 확인 - 직접 좌표 배열 사용
           const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
           const processedStones = new Set<string>();
-          
+          let numCaptured = 0;
+
           for (const [dx, dy] of directions) {
             const nx = x + dx;
             const ny = y + dy;
@@ -334,6 +353,7 @@ export class Game {
                     processedStones.add(`${stone.xPos},${stone.yPos}`);
                     newBoardState[stone.xPos][stone.yPos].stone = Stone.None;
                     game.intersections[stone.xPos][stone.yPos].stone = Stone.None;
+                    numCaptured++;
                   }
                 }
               }
@@ -346,6 +366,14 @@ export class Game {
             for (const stone of selfCaptured) {
               newBoardState[stone.xPos][stone.yPos].stone = Stone.None;
               game.intersections[stone.xPos][stone.yPos].stone = Stone.None;
+            }
+          }
+          
+          if (numCaptured > 0) {
+            if (color === Stone.Black) {
+              game.blackScore += numCaptured;
+            } else {
+              game.whiteScore += numCaptured;
             }
           }
           
@@ -385,9 +413,9 @@ export class Game {
       lastMoveColor = color;
     }
     
-    // 최종 상태 적용
+    // 최종 상태 적용: 게임 상태 체인의 마지막 상태(prevState)를 그대로 사용하여, 각 노드의 마커가 온전하게 보존되도록 함
     if (prevState && prevState !== game.gameState) {
-      game.loadGameState(prevState);
+      game.gameState = prevState;
     }
     
     if (game.stateChangeCallback) {
@@ -452,13 +480,13 @@ export class Game {
         const grouped = {
           TR: [] as string[], // triangle
           SQ: [] as string[], // square
-          CR: [] as string[], // cross
-          MA: [] as string[], // circle
+          CR: [] as string[], // circle
+          MA: [] as string[], // cross
           LB: [] as string[], // label
         };
  
-        const markerMap = new Map<string, typeof this.markers[0]>();
-        for (const marker of [...this.markers, ...(state.markers ?? [])]) {
+        const markerMap = new Map<string, { x: number; y: number; type: string; label?: string; moveNum?: number }>();
+        for (const marker of (state.markers ?? [])) {
           const key = `${marker.x}-${marker.y}-${marker.type}-${marker.label || ''}-${marker.moveNum || ''}`;
           if (!markerMap.has(key)) {
             markerMap.set(key, marker);
@@ -470,8 +498,8 @@ export class Game {
           if (marker.moveNum === state.moveNum || (marker.moveNum == null && move && marker.x === move.xPos && marker.y === move.yPos)) {
             if (marker.type === 'triangle') grouped.TR.push(c);
             else if (marker.type === 'square') grouped.SQ.push(c);
-            else if (marker.type === 'circle') grouped.CR.push(c); // CR is circle
-            else if (marker.type === 'cross') grouped.MA.push(c); // MA is cross
+            else if (marker.type === 'circle') grouped.CR.push(c);
+            else if (marker.type === 'cross') grouped.MA.push(c);
             else if (marker.type === 'letter' || marker.type === 'number') {
               grouped.LB.push(`${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}:${marker.label}`);
             }
@@ -630,7 +658,7 @@ export class Game {
   private endGame(): void {
     this.setTurn(Stone.None);
     
-    // 영역 계산 - 사용하지 않는 변수 제거
+    // 영역 계산
     this.getAllTerritories();
     this.notifyStateChange();
   }
@@ -817,12 +845,6 @@ export class Game {
       this.getValidIntersection(xPos + 1, yPos)
     ];
     
-    // Create HashSet only with non-null intersections
-    const validNeighbors = adjacentPositions.filter((int): int is Intersection => int !== null);
-    
-    // neighbors 변수 사용하지 않으므로 제거 (hashSet이 반환값으로 사용되지 않음)
-    new HashSet<Intersection>(...validNeighbors);
-    
     return adjacentPositions;
   }
 
@@ -996,7 +1018,7 @@ export class Game {
   /**
    * 상태 변화 알림
    */
-  private notifyStateChange(): void {
+  public notifyStateChange(): void {
     if (this.stateChangeCallback) {
       this.stateChangeCallback();
     }
@@ -1026,25 +1048,26 @@ export class Game {
   }
 
   public addMarker(x: number, y: number, type: string, label?: string): void {
-    // Check if a marker already exists at the clicked position and remove it
+    
     const existingIndex = this.markers.findIndex(m => m.x === x && m.y === y);
+  
     if (existingIndex !== -1) {
+      // 기존 마커 삭제
       this.markers.splice(existingIndex, 1);
       if (this.gameState && this.gameState.markers) {
         this.gameState.markers = this.gameState.markers.filter(m => !(m.x === x && m.y === y));
       }
     }
-
+  
     const moveNum = this.gameState?.moveNum ?? 0;
     const marker = { x, y, type, label, moveNum };
-
-    // Add the new marker
+  
+    // 새 마커 추가
     this.markers.push(marker);
     if (this.gameState) {
       this.gameState.markers = [...(this.gameState.markers ?? []), marker];
     }
-
-    // Update the game state
+  
     this.notifyStateChange();
   }
   public setStateChangeCallback(cb: () => void): void {

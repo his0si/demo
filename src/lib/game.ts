@@ -144,8 +144,8 @@ export class GameStateImpl implements GameState {
   }
 
   public toString(): string {
-    const transpose = (array: Intersection[][]) => 
-      array[0].map((col, i) => array.map(row => row[i]));
+    const transpose = (array: Intersection[][]): Intersection[][] =>
+      array[0].map((_, i) => array.map(row => row[i]));
 
     const transposed = transpose(this.intersections);
     
@@ -165,15 +165,14 @@ export class GameStateImpl implements GameState {
   }
 
   public getState(moveNum: number): GameState | null {
-    // 'this'를 직접 현재 상태로 취급
-    if (this.moveNum > moveNum) {
-      if (!this.prevGameState) return null;
-      // 재귀적으로 이전 상태에서 찾기
-      return this.prevGameState.getState(moveNum);
-    }
+    let state = this as GameState;
     
-    // 현재 상태의 moveNum이 찾는 moveNum과 같거나 작으면 현재 상태를 반환
-    return this;
+    while(state.moveNum > moveNum) {
+      if (!state?.prevGameState) return null;
+      state = state.prevGameState;
+    }
+
+    return state;
   }
 }
 
@@ -250,8 +249,7 @@ export class Game {
   
     // 이전 게임 상태를 추적하여 불필요한 참조 줄이기
     let prevState: GameState | null = game.gameState;
-    // 현재 보드 상태 추적
-    //let currentBoardState = game.copyIntersections();
+    // let boardState = game.copyIntersections(); // 현재 보드 상태 복사본
   
     for (const node of nodes) {
       const moveMatch = node.match(movePattern);
@@ -315,20 +313,14 @@ export class Game {
       if (moveMatch && coord !== '') {
         const x = charToPos(coord[0]);
         const y = charToPos(coord[1]);
-        
-        // 보드에 돌 직접 놓기
+
         newBoardState[x][y].stone = color;
-        
-        // 포획 로직 간소화
+
         if (game.intersections[x][y].stone === Stone.None) {
-          // 돌 놓기
           game.intersections[x][y].stone = color;
-          
-          // 포획 로직 효율적으로 실행
+
           const otherPlayer = color === Stone.Black ? Stone.White : Stone.Black;
-          const capturedGroups: Intersection[][] = [];
-          
-          // 이웃 확인 - 직접 좌표 배열 사용
+          const capturedGroups = [];
           const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
           const processedStones = new Set<string>();
           let numCaptured = 0;
@@ -336,19 +328,16 @@ export class Game {
           for (const [dx, dy] of directions) {
             const nx = x + dx;
             const ny = y + dy;
-            
-            // 유효 범위 확인
+
             if (nx >= 0 && nx < game.xLines && ny >= 0 && ny < game.yLines) {
               const neighbor = game.intersections[nx][ny];
-              
-              // 상대 돌이고 아직 처리되지 않았으면
+
               if (neighbor.stone === otherPlayer && !processedStones.has(`${nx},${ny}`)) {
                 const captured = game.getCapturedGroup(neighbor);
-                
+
                 if (captured.length > 0) {
                   capturedGroups.push(captured);
-                  
-                  // 포획된 돌 처리
+
                   for (const stone of captured) {
                     processedStones.add(`${stone.xPos},${stone.yPos}`);
                     newBoardState[stone.xPos][stone.yPos].stone = Stone.None;
@@ -359,8 +348,7 @@ export class Game {
               }
             }
           }
-          
-          // 자기 돌도 잡힐 수 있는지 확인
+
           const selfCaptured = game.getCapturedGroup(game.intersections[x][y]);
           if (selfCaptured.length > 0) {
             for (const stone of selfCaptured) {
@@ -368,7 +356,7 @@ export class Game {
               game.intersections[stone.xPos][stone.yPos].stone = Stone.None;
             }
           }
-          
+
           if (numCaptured > 0) {
             if (color === Stone.Black) {
               game.blackScore += numCaptured;
@@ -376,7 +364,7 @@ export class Game {
               game.whiteScore += numCaptured;
             }
           }
-          
+
           game.lastMove = game.intersections[x][y];
         }
       }
@@ -404,6 +392,7 @@ export class Game {
       }
       
       prevState = newState;
+      // boardState = newBoardState;
       
       if (!game.gameState || game.gameState.moveNum === 0) {
         game.gameState = newState;
@@ -659,7 +648,7 @@ export class Game {
     this.setTurn(Stone.None);
     
     // 영역 계산
-    this.getAllTerritories();
+    // const territories = this.getAllTerritories();
     this.notifyStateChange();
   }
 
@@ -844,6 +833,10 @@ export class Game {
       this.getValidIntersection(xPos - 1, yPos),
       this.getValidIntersection(xPos + 1, yPos)
     ];
+    
+    // Create HashSet only with non-null intersections
+    // const validNeighbors = adjacentPositions.filter((int): int is Intersection => int !== null);
+    // const neighbors = new HashSet<Intersection>(...validNeighbors);
     
     return adjacentPositions;
   }
@@ -1032,6 +1025,12 @@ export class Game {
   public getWhiteScore(): number { return this.whiteScore; }
   public getLastMove(): Intersection | null { return this.lastMove; }
   public getGameState(): GameState | null { return this.gameState; }
+  public getCurrentAndNextMove(): { current?: Intersection; next?: Intersection } {
+    return {
+      current: this.gameState?.move ?? undefined,
+      next: this.gameState?.nextGameState?.move ?? undefined
+    };
+  }
 
   public getScoreWithTerritory(color: Stone): { score: number, territory: number } {
     const baseScore = color === Stone.Black ? this.blackScore : this.whiteScore;

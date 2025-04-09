@@ -127,9 +127,13 @@ export default function useGame() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.sgf';
-    input.onchange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
+    
+    // DOM 이벤트 핸들러 타입으로 수정
+    input.onchange = function(event: Event) {
+      const target = event.target as HTMLInputElement;
+      const file = target.files?.[0];
       if (!file) return;
+      
       const reader = new FileReader();
       reader.onload = () => {
         const sgfContent = reader.result as string;
@@ -137,6 +141,7 @@ export default function useGame() {
       };
       reader.readAsText(file);
     };
+    
     input.click();
   }, [loadSGF]);
 

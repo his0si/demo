@@ -246,8 +246,7 @@ export default function Board({
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-current')
         .attr('fill', strokeColor)
-        .attr('fill-opacity', 0.5)
-        .attr('stroke-width', 2);
+        .attr('fill-opacity', 0.5);
     }
 
     if (lastMoveMarkers?.next) {
@@ -260,7 +259,8 @@ export default function Board({
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-next')
         .attr('fill', strokeColor)
-        .attr('stroke-width', 2);
+        .attr('fill-opacity', 0.9);
+
     }
     
     // 게임이 끝났을 때 영역 표시

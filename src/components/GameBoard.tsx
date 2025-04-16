@@ -11,7 +11,7 @@ import NavBar from './NavBar';
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const {
     isGameEnded,
@@ -109,17 +109,17 @@ export default function GameBoard() {
 
   return (
     <div className="flex flex-col">
-      <NavBar onToggleSidebar={() => setShowSidebar((prev) => !prev)} />
+      <NavBar />
       <div className="flex gap-4">
-        {showSidebar && (
-          <LeftSidebar
-            recentFiles={[]} // TODO: Replace with actual recent SGF file data
-            onFileClick={(file) => {
-              // TODO: Add actual SGF file loading logic here
-              console.log('Load file:', file);
-            }}
-          />
-        )}
+        <LeftSidebar
+          recentFiles={[]} // TODO: Replace with actual recent SGF file data
+          onFileClick={(file) => {
+            // TODO: Add actual SGF file loading logic here
+            console.log('Load file:', file);
+          }}
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
+        />
         <div className="flex-1">
           <div className="container mx-auto p-4 flex flex-col">
             <GameControls

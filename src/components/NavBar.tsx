@@ -25,12 +25,6 @@ export default function NavBar({ onLogoClick, onToggleSidebar }: NavBarProps) {
     >
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <button
-            onClick={onToggleSidebar}
-            className="px-2 py-1 rounded hover:bg-gray-200 transition"
-          >
-            ☰
-          </button>
           <p className="text-2xl font-bold tracking-tight text-gray-900">
             goggle<span className="text-sky-400">.</span>
           </p>

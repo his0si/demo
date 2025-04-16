@@ -36,10 +36,9 @@ export default function RightSidebar({
 
       <div className="h-[44%] flex flex-col">
         <h3 className="text-md font-semibold mb-1">User Comment</h3>
-        <div className="bg-white rounded p-2 shadow-inner flex flex-col overflow-auto flex-grow">
           <textarea
-            className="border rounded px-2 py-1 h-full w-full resize-none"
-            placeholder="메모 입력"
+            className="bg-white border rounded px-2 py-1 h-full w-full resize-none"
+            placeholder="Add your comment"
             value={comment}
             onChange={(e) => {
               const newComment = e.target.value;
@@ -50,7 +49,6 @@ export default function RightSidebar({
               }
             }}
           />
-        </div>
       </div>
     </aside>
   );

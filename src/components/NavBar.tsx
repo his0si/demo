@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 
 interface NavBarProps {
   onLogoClick?: () => void;
-  onToggleSidebar?: () => void;
 }
 
-export default function NavBar({ onLogoClick, onToggleSidebar }: NavBarProps) {
+export default function NavBar({ onLogoClick }: NavBarProps) {
   const handleLogoClick = () => {
     if (onLogoClick) {
       onLogoClick();

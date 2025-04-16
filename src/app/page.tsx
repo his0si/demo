@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import LandingPage from '@/components/LandingPage';
 import GameBoard from '@/components/GameBoard';
-import NavBar from '@/components/NavBar';
 import useGame from '@/hooks/useGame';
 
 export default function Home() {
@@ -17,10 +16,6 @@ export default function Home() {
       startGame();
     }
   }, [status, session, isGameStarted, startGame]);
-  
-  const handleLogoClick = () => {
-    signOut({ redirect: true, callbackUrl: '/' });
-  };
   
   return (
     <>

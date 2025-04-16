@@ -1027,8 +1027,8 @@ export class Game {
   public getGameState(): GameState | null { return this.gameState; }
   public getCurrentAndNextMove(): { current?: Intersection; next?: Intersection } {
     return {
-      current: this.gameState?.prevGameState?.move ?? undefined,  // 이전 수
-      next: this.gameState?.move ?? undefined  // 현재 수
+      current: this.gameState?.prevGameState?.move ?? undefined,
+      next: this.gameState?.move ?? undefined
     };
   }
 

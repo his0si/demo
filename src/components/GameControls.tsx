@@ -80,10 +80,13 @@ export default function GameControls({
             <ArrowUturnRightIcon className="w-5 h-5" />
           </button>
           <button onClick={onSave} className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-            SGF 저장
+            Save
           </button>
           <button onClick={onLoad} className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-            SGF 열기
+            Open
+          </button>
+          <button className='px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600'>
+            AI Analyze
           </button>
         </div>
       )}

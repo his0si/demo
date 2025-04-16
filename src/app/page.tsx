@@ -26,7 +26,6 @@ export default function Home() {
     <>
       {isGameStarted ? (
         <div className="min-h-screen flex flex-col">
-          <NavBar onLogoClick={handleLogoClick} />
           
           <main className="flex-grow">
             <GameBoard />

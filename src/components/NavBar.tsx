@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 
 interface NavBarProps {
   onLogoClick?: () => void;
+  onToggleSidebar?: () => void;
 }
 
-export default function NavBar({ onLogoClick }: NavBarProps) {
+export default function NavBar({ onLogoClick, onToggleSidebar }: NavBarProps) {
   const handleLogoClick = () => {
     if (onLogoClick) {
       onLogoClick();
@@ -23,9 +24,17 @@ export default function NavBar({ onLogoClick }: NavBarProps) {
       className="w-full bg-white/90 backdrop-blur-md z-50 px-6 py-5 border-b border-gray-100"
     >
       <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <p className="text-2xl font-bold tracking-tight text-gray-900">
-          goggle<span className="text-sky-400">.</span>
-        </p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onToggleSidebar}
+            className="px-2 py-1 rounded hover:bg-gray-200 transition"
+          >
+            ☰
+          </button>
+          <p className="text-2xl font-bold tracking-tight text-gray-900">
+            goggle<span className="text-sky-400">.</span>
+          </p>
+        </div>
         <div className="flex items-center gap-8">
           <button 
             onClick={handleLogoClick}

@@ -30,12 +30,6 @@ const Privacy = () => {
             goggle<span className="text-sky-400">.</span>
           </Link>
           <div className="flex items-center gap-8">
-            <Link
-              href="/auth/signin"
-              className="px-5 py-2 rounded-full bg-gray-100 text-gray-800 text-sm font-medium hover:bg-gray-200 hover:text-black transition-all duration-300"
-            >
-              로그인
-            </Link>
           </div>
         </div>
       </motion.nav>

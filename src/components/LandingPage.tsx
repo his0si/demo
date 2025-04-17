@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import { useCallback } from "react";
@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 import Footer from './Footer';
 
 const LandingPage: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -18,33 +20,101 @@ const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-white font-sans overflow-x-hidden">
       {/* Navigation Bar */}
       <motion.nav 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7 }}
-        className="fixed w-full top-0 bg-white/90 backdrop-blur-md z-50 px-6 py-5 border-b border-gray-100"
+        className="fixed w-full top-0 bg-white/90 backdrop-blur-md z-50 border-b border-gray-100"
       >
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <button
-            onClick={scrollToTop}
-            className="text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
-          >
-            goggle<span className="text-sky-400">.</span>
-          </button>
-          <div className="flex items-center gap-8">
-            <Link href="#content-section" className="text-gray-600 text-sm font-medium hover:text-black hidden md:block">솔루션</Link>
-            <Link href="#tech-section" className="text-gray-600 text-sm font-medium hover:text-black hidden md:block">기술</Link>
-            <Link href="#cta-section" className="text-gray-600 text-sm font-medium hover:text-black hidden md:block">시작하기</Link>
-            <Link
-              href="/auth/signin"
-              className="px-5 py-2 rounded-full bg-gray-100 text-gray-800 text-sm font-medium hover:bg-gray-200 hover:text-black transition-all duration-300"
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-5">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={scrollToTop}
+              className="text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
             >
-              로그인
-            </Link>
+              goggle<span className="text-sky-400">.</span>
+            </button>
+            
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center gap-8">
+              <Link href="#content-section" className="text-gray-600 text-sm font-medium hover:text-black">솔루션</Link>
+              <Link href="#tech-section" className="text-gray-600 text-sm font-medium hover:text-black">기술</Link>
+              <Link href="#cta-section" className="text-gray-600 text-sm font-medium hover:text-black">시작하기</Link>
+              <Link
+                href="/auth/signin"
+                className="px-5 py-2 rounded-full bg-gray-100 text-gray-800 text-sm font-medium hover:bg-gray-200 hover:text-black transition-all duration-300"
+              >
+                로그인
+              </Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <svg
+                className="w-6 h-6 text-gray-600"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {isMenuOpen ? (
+                  <path d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100"
+          >
+            <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex flex-col gap-4">
+              <Link
+                href="#content-section"
+                className="text-gray-600 text-sm font-medium hover:text-black"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                솔루션
+              </Link>
+              <Link
+                href="#tech-section"
+                className="text-gray-600 text-sm font-medium hover:text-black"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                기술
+              </Link>
+              <Link
+                href="#cta-section"
+                className="text-gray-600 text-sm font-medium hover:text-black"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                시작하기
+              </Link>
+              <Link
+                href="/auth/signin"
+                className="px-5 py-2 rounded-full bg-gray-100 text-gray-800 text-sm font-medium hover:bg-gray-200 hover:text-black transition-all duration-300"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                로그인
+              </Link>
+            </div>
+          </motion.div>
+        )}
       </motion.nav>
 
       {/* Hero Section */}

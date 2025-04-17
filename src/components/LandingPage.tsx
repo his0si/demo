@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCallback } from "react";
 import { motion } from "framer-motion";
+import Footer from './Footer';
 
 const LandingPage: React.FC = () => {
   const scrollToTop = useCallback(() => {
@@ -182,7 +183,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">하이라이트 생성</h3>
                 <p className="text-gray-600 leading-relaxed">
-                전체 대국 중에서 승부가 크게 요동친 구간이나 중요한 전투 장면 등을 자동으로 선별해, '하이라이트' 형태로 정리해 줍니다.
+                전체 대국 중에서 승부가 크게 요동친 구간이나 중요한 전투 장면 등을 자동으로 선별해, &apos;하이라이트&apos; 형태로 정리해 줍니다.
                 </p>
               </motion.div>
             </div>
@@ -378,30 +379,7 @@ const LandingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Simple Footer */}
-      <footer className="bg-gray-50 border-t border-gray-100 py-10">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
-              <p className="text-xl tracking-tight text-gray-900">
-                goggle<span className="text-sky-400">.</span>
-              </p>
-              <p className="text-gray-500 mt-2">
-                바둑 이야기를 담는 AI 기반 복기 서비스
-              </p>
-            </div>
-            
-            <div className="flex space-x-6">
-              <a href="https://github.com/Team-Goggle" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-900 transition-colors">GitHub</a>
-              <Link href="/privacy" className="text-gray-500 hover:text-gray-900 transition-colors">개인정보처리방침</Link>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 mt-8 pt-8 flex justify-center">
-            <p className="text-sm text-gray-500">© 2025 Goggle. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

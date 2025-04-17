@@ -28,11 +28,11 @@ const LandingPage: React.FC = () => {
         transition={{ duration: 0.7 }}
         className="fixed w-full top-0 bg-white/90 backdrop-blur-md z-50 border-b border-gray-100"
       >
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-5">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-5">
           <div className="flex justify-between items-center">
             <button
               onClick={scrollToTop}
-              className="text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
+              className="text-xl md:text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
             >
               goggle<span className="text-sky-400">.</span>
             </button>

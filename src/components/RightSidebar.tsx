@@ -20,12 +20,12 @@ interface RightSidebarProps {
 
 export default function RightSidebar({ comment, setComment, gameRef, gameTree }: RightSidebarProps) {
   return (
-    <div className="w-64 border-l border-gray-200 bg-white h-screen flex flex-col">
+    <div className="w-64 border-l border-gray-200 bg-gray-100 h-screen flex flex-col">
       {/* 게임 트리 영역 */}
       <div className="h-[44%] border-b border-gray-200">
         <div className="h-full p-4">
           <h3 className="text-md font-semibold mb-2">Gametree</h3>
-          <div className="h-[calc(100%-2rem)] bg-transparent rounded p-2">  {/* bg-white를 bg-transparent로 변경 */}
+          <div className="h-[calc(100%-2rem)] bg-white rounded p-2">  {/* bg-white를 bg-transparent로 변경 */}
             {gameTree ? (
               <div className="h-full overflow-auto">
                 <div className="min-w-[150px] overflow-x-auto">
@@ -62,7 +62,7 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
       <div className="flex-1 p-4">
         <h3 className="text-md font-semibold mb-1">User Comment</h3>
         <textarea
-          className="bg-white border rounded px-2 py-1 h-full w-full resize-none"
+          className="bg-white rounded px-2 py-1 h-full w-full resize-none"
           placeholder="Add your comment"
           value={comment}
           onChange={(e) => {

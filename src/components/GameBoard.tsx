@@ -197,7 +197,12 @@ export default function GameBoard() {
             />
           </div>
         </div>
-        <RightSidebar comment={comment} setComment={setComment} gameRef={gameRef} />
+        <RightSidebar 
+          comment={comment}
+          setComment={setComment}
+          gameRef={gameRef}
+          gameTree={gameRef.current?.getGameTree()}
+        />
       </div>
     </div>
   );

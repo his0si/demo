@@ -1,5 +1,4 @@
 // src/lib/game.ts
-import FileSaver from 'file-saver';
 import { 
   Stone, 
   Intersection, 
@@ -470,18 +469,44 @@ export class Game {
   /**
    * SGF 파일로 저장
    */
-  public saveSGF(): void {
-    const sgfBlob = new Blob([this.getSGF()], { type: "text/plain;charset=utf-8" });
-    const date = new Date();
-    const yy = String(date.getFullYear()).slice(-2);
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    const dateString = `${yy}${mm}${dd}-${hh}${min}`;
-    const fileName = `Goggle-${dateString}.sgf`.replace(/[<>:"/\\|?*]/g, '_');
+  public saveSGF(): string {
+    const header = `(;GM[1]FF[4]CA[UTF-8]AP[Goggle:1.0]KM[6.5]SZ[${this.xLines}]DT[${new Date().toISOString().split('T')[0]}]`;
 
-    FileSaver.saveAs(sgfBlob, fileName);
+    const serializeNode = (node: GameNode): string => {
+      let sgf = '';
+      
+      // 현재 노드의 데이터를 SGF로 변환
+      if (node.id !== 'root') {
+        const move = node.data.move!;
+        sgf += `;${move.color === Stone.Black ? 'B' : 'W'}[${this.convertToSGFCoord(move.x, move.y)}]`;
+        
+        if (node.data.comment) {
+          sgf += `C[${node.data.comment}]`;
+        }
+      }
+
+      // 자식 노드가 있는 경우
+      if (node.children.length > 0) {
+        // 모든 자식이 변화도가 되어야 함
+        const variations = node.children.map(child => serializeNode(child));
+        
+        if (variations.length === 1) {
+          // 자식이 하나면 그대로 이어서 작성
+          sgf += variations[0];
+        } else {
+          // 자식이 여러 개면 각각을 괄호로 감싸서 병렬로 작성
+          sgf += variations.map(v => `(${v})`).join('');
+        }
+      }
+
+      return sgf;
+    };
+
+    return header + serializeNode(this.gameTree.root) + ')';
+  }
+
+  private convertToSGFCoord(x: number, y: number): string {
+    return String.fromCharCode(97 + x) + String.fromCharCode(97 + y);
   }
 
   /**

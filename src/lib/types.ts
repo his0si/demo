@@ -89,7 +89,7 @@ export interface GameTree {
   root: GameNode;
   currentNodeId: string;
   mainPath: Set<string>;
-  get(id: string): GameNode;
+  get(id: string): GameNode | undefined;
 }
 
 // 게임보드 관련 타입
@@ -111,7 +111,7 @@ export interface BoardMarker {
 
 // 보드 정보 인터페이스 추가
 export interface BoardInfo {
-  vertex: [number, number];
+  vertex: Vertex;
   type: 'variation' | 'sibling';
   moveNumber?: number;
 }
@@ -149,5 +149,5 @@ export interface GameTreeInteractions {
 export interface MatrixDictParams {
   nodes: GameNode[];
   currentNodeId: string;
-  onNodeClick: () => void;
+  onNodeClick: (nodeId: string) => void;  // nodeId 매개변수 추가
 }

@@ -195,6 +195,7 @@ export class Game {
   private claimedTerritoryLookup: HashSet<Intersection> = new HashSet();
   private stateChangeCallback: (() => void) | null = null;
   private gameTree: GameTree;
+  private nodeMap: Map<string, GameNode> = new Map();
   private currentNode: GameNode;
   constructor(
     xLines: number = 19, 
@@ -207,18 +208,28 @@ export class Game {
     
     this.intersections = Game.initIntersections(xLines, yLines);
     this.gameState = this.newGameState();
+    const rootNode = {
+      id: 'root',
+      parentId: null,
+      children: [],
+      data: {
+        move: { x: -1, y: -1, color: Stone.Black }
+      }
+    };
+
+    // 루트 노드를 Map에 추가
+    this.nodeMap.set(rootNode.id, rootNode);
+
     this.gameTree = {
-      root: {
-        id: 'root',
-        parentId: null,
-        children: [],
-        data: {
-          move: { x: -1, y: -1, color: Stone.Black }
-        }
-      },
+      root: rootNode,
       currentNodeId: 'root',
-      mainPath: new Set(['root']),  // 메인 수순 추적을 위한 Set 추가
+      mainPath: new Set(['root']),
       get: (id: string): GameNode => {
+        // Map에서 먼저 검색
+        const node = this.nodeMap.get(id);
+        if (node) return node;
+
+        // Map에 없는 경우 트리 순회로 fallback
         const traverse = (node: GameNode): GameNode | null => {
           if (node.id === id) return node;
           for (const child of node.children) {
@@ -227,14 +238,19 @@ export class Game {
           }
           return null;
         };
+
         const result = traverse(this.gameTree.root);
         if (!result) {
           throw new Error(`Node with id ${id} not found`);
         }
+
+        // 찾은 노드를 Map에 캐시
+        this.nodeMap.set(id, result);
         return result;
       }
     };
-    this.currentNode = this.gameTree.root;
+
+    this.currentNode = rootNode;
   }
 
   /**
@@ -634,7 +650,6 @@ export class Game {
     const success = true;
 
     if (success) {
-      // 게임 트리에 새로운 노드 추가
       const newNode: GameNode = {
         id: Math.random().toString(36).slice(2),
         parentId: this.currentNode.id,
@@ -645,9 +660,10 @@ export class Game {
       };
 
       this.currentNode.children.push(newNode);
+      this.nodeMap.set(newNode.id, newNode); // Map에 새 노드 추가
       this.currentNode = newNode;
       this.gameTree.currentNodeId = newNode.id;
-      this.gameTree.mainPath.add(newNode.id);  // 메인 수순에 추가
+      this.gameTree.mainPath.add(newNode.id);
       this.notifyStateChange();
     }
 
@@ -1167,7 +1183,7 @@ export class Game {
 
     while (current) {
       path.unshift(current);
-      current = this.findNodeById(current.parentId || '');
+      current = current.parentId ? this.findNodeById(current.parentId) : null;
     }
 
     return path;
@@ -1205,14 +1221,25 @@ export class Game {
   }
 
   private findNodeById(nodeId: string): GameNode | null {
+    // Map에서 먼저 조회 (O(1) 시간 복잡도)
+    if (this.nodeMap.has(nodeId)) {
+      return this.nodeMap.get(nodeId)!;
+    }
+
+    // Map에 없는 경우 트리 순회로 fallback
     const traverse = (node: GameNode): GameNode | null => {
-      if (node.id === nodeId) return node;
+      if (node.id === nodeId) {
+        // 찾은 노드를 Map에 캐시
+        this.nodeMap.set(nodeId, node);
+        return node;
+      }
       for (const child of node.children) {
         const found = traverse(child);
         if (found) return found;
       }
       return null;
     };
+
     return traverse(this.gameTree.root);
   }
 

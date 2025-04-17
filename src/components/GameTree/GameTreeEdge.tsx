@@ -31,7 +31,7 @@ export default function GameTreeEdge({
       fill="none"
       stroke={isMainLine ? '#4B5563' : '#9CA3AF'}
       strokeWidth={isMainLine ? 1 : 0.5}
-      className="transition-colors"
+      className="transition-colors duration-200"
       strokeLinecap="round"
       strokeLinejoin="round"
     />

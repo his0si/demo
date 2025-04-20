@@ -41,6 +41,17 @@ export default function GameTreeNode({
             className="transition-colors cursor-pointer"
             onClick={() => onClick(node.id)}
           />
+
+          {/* 변화도 표시 */}
+          {node.children.length > 1 && (
+            <circle
+                r={radius}
+                fill="none"
+                stroke="red"
+                strokeWidth={1}
+                className="pointer-events-none"
+          />
+          )}
           
           {/* 선택 표시 */}
           {isSelected && (
@@ -53,16 +64,6 @@ export default function GameTreeNode({
             />
           )}
           
-          {/* 변화도 표시 */}
-          {node.children.length > 1 && (
-            <circle
-                r={radius}
-                fill="none"
-                stroke="red"
-                strokeWidth={1}
-                className="pointer-events-none"
-          />
-          )}
         </>
       )}
     </g>

@@ -9,6 +9,7 @@ export interface GameState {
 
 export interface GameRef {
   getGameState: () => GameState;
+  updateComment: (comment: string) => void;
 }
 
 interface RightSidebarProps {
@@ -19,6 +20,14 @@ interface RightSidebarProps {
 }
 
 export default function RightSidebar({ comment, setComment, gameRef, gameTree }: RightSidebarProps) {
+  // 코멘트 변경 핸들러
+  const handleCommentChange = (value: string) => {
+    setComment(value);
+    if (gameRef.current) {
+      gameRef.current.updateComment(value);
+    }
+  };
+
   return (
     <div className="w-64 border-l border-gray-200 bg-gray-100 h-screen flex flex-col">
       {/* 게임 트리 영역 */}
@@ -62,17 +71,10 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
       <div className="flex-1 p-4">
         <h3 className="text-md font-semibold mb-1">User Comment</h3>
         <textarea
-          className="bg-white rounded px-2 py-1 h-full w-full resize-none"
-          placeholder="Add your comment"
           value={comment}
-          onChange={(e) => {
-            const newComment = e.target.value;
-            setComment(newComment);
-            const state = gameRef.current?.getGameState();
-            if (state) {
-              state.comment = newComment;
-            }
-          }}
+          onChange={(e) => handleCommentChange(e.target.value)}
+          className="w-full h-32 p-2 border rounded"
+          placeholder="코멘트를 입력하세요..."
         />
       </div>
     </div>

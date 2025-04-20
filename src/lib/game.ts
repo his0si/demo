@@ -678,7 +678,8 @@ export class Game {
       parentId: this.currentNode.id,
       children: [],
       data: {
-        move: { x: xPos, y: yPos, color: this.turn }
+        move: { x: xPos, y: yPos, color: this.turn },
+        comment: '' // 초기 코멘트 설정
       }
     };
 
@@ -779,6 +780,12 @@ export class Game {
 
     // 5. 보드 상태 복원
     this.restoreGameState(targetNode);
+
+    // 코멘트 상태 동기화 추가
+    if (this.gameState) {
+      this.gameState.comment = targetNode.data.comment || '';
+    }
+
     this.notifyStateChange();
   }
 
@@ -1309,5 +1316,20 @@ export class Game {
     }
 
     return path;
+  }
+
+  // 코멘트 업데이트 메서드 추가
+  public updateComment(comment: string): void {
+    if (!this.currentNode) return;
+    
+    // GameNode의 코멘트 업데이트
+    this.currentNode.data.comment = comment;
+    
+    // GameState의 코멘트도 동기화
+    if (this.gameState) {
+      this.gameState.comment = comment;
+    }
+
+    this.notifyStateChange();
   }
 }

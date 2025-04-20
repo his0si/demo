@@ -674,26 +674,39 @@ export class Game {
     this.lastMove = this.intersections[xPos][yPos];
     const success = true;
 
-    if (success) {
-      const newNode: GameNode = {
-        id: Math.random().toString(36).slice(2),
-        parentId: this.currentNode.id,
-        children: [],
-        data: {
-          move: { x: xPos, y: yPos, color: this.turn }
-        }
-      };
+    const newNode: GameNode = {
+      id: Math.random().toString(36).slice(2),
+      parentId: this.currentNode.id,
+      children: [],
+      data: {
+        move: { x: xPos, y: yPos, color: this.turn }
+      }
+    };
 
-      this.currentNode.children.push(newNode);
-      this.nodeMap.set(newNode.id, newNode); // Map에 새 노드 추가
-      this.currentNode = newNode;
-      this.gameTree.currentNodeId = newNode.id;
-      this.gameTree.mainPath.add(newNode.id);
-      this.notifyStateChange();
+    // 새로운 메인 패스 생성
+    const newMainPath = new Set(['root']);
+    
+    // 새 노드부터 루트까지의 경로를 메인 패스로 설정
+    let current: GameNode | null = newNode;
+    while (current) {
+      newMainPath.add(current.id);
+      if (current.parentId) {
+        current = this.findNodeById(current.parentId);
+      } else {
+        break;
+      }
     }
 
+    // 게임 트리 업데이트
+    this.currentNode.children.push(newNode);
+    this.nodeMap.set(newNode.id, newNode);
+    this.currentNode = newNode;
+    this.gameTree.currentNodeId = newNode.id;
+    this.gameTree.mainPath = newMainPath;  // 메인 패스 업데이트
+
+    this.notifyStateChange();
     this.nextTurn();
-    return success;
+    return true;
   }
 
   /**
@@ -1169,36 +1182,51 @@ export class Game {
   }
 
   public navigateToNode(nodeId: string): void {
-    const node = this.findNodeById(nodeId);
-    if (!node) return;
+    const targetNode = this.findNodeById(nodeId);
+    if (!targetNode) return;
 
-    // 1. 보드 상태 초기화
-    this.intersections = Game.initIntersections(this.xLines, this.yLines);
+    // 1. 새로운 메인 패스 생성
+    const newMainPath = new Set(['root']);
     
-    // 2. 루트부터 선택된 노드까지의 경로 찾기
-    const path = this.getPathToNode(node);
-    
-    // 3. 경로상의 모든 수를 복원 (makeMove 대신 직접 돌 배치)
-    for (const pathNode of path) {
-      const move = pathNode.data.move;
-      if (move && move.x >= 0 && move.y >= 0) {
-        // 직접 돌 배치
-        this.intersections[move.x][move.y].stone = move.color;
+    // 2. 선택된 노드부터 루트까지의 경로를 메인 패스로 설정
+    let current: GameNode | null = targetNode;
+    while (current) {
+      newMainPath.add(current.id);
+      if (current.parentId) {
+        current = this.findNodeById(current.parentId);
+      } else {
+        break;
       }
     }
 
-    // 4. 게임 상태 업데이트
-    this.currentNode = node;
-    this.gameTree.currentNodeId = node.id;
-    
-    // 5. 다음 턴 설정 (마지막 수의 반대 색)
-    const lastMove = path[path.length - 1]?.data.move;
-    if (lastMove) {
-      this.turn = lastMove.color === Stone.Black ? Stone.White : Stone.Black;
-    }
+    // 3. 메인 패스 업데이트
+    this.gameTree.mainPath = newMainPath;
 
-    // 6. UI 업데이트
+    // 4. 보드 상태 업데이트
+    this.resetBoardState(targetNode);
+    this.currentNode = targetNode;
+    this.gameTree.currentNodeId = nodeId;
+
     this.notifyStateChange();
+  }
+
+  private resetBoardState(targetNode: GameNode): void {
+    // 보드 초기화
+    this.intersections = Game.initIntersections(this.xLines, this.yLines);
+    
+    // 경로 상의 수를 복원
+    const path = this.getPathToNode(targetNode);
+    for (const node of path) {
+      const move = node.data.move;
+      if (move && move.x >= 0 && move.y >= 0) {
+        this.intersections[move.x][move.y].stone = move.color;
+        if (move.color === Stone.Black) {
+          this.turn = Stone.White;
+        } else {
+          this.turn = Stone.Black;
+        }
+      }
+    }
   }
 
   // 노드까지의 경로 찾기
@@ -1300,27 +1328,34 @@ export class Game {
     const targetNode = this.findNodeById(targetNodeId);
     if (!targetNode || !targetNode.parentId) return;
 
-    const parentNode = this.findNodeById(targetNode.parentId);
-    if (!parentNode) return;
-
-    // 1. 현재 메인 수순인지 확인
-    const isMainLine = this.gameTree.mainPath.has(targetNodeId);
+    // 1. 새로운 메인 패스 생성
+    const newMainPath = new Set(['root']);
     
-    if (!isMainLine) {
-      // 2. 변화도를 메인 수순으로 변경
-      const newMainPath = new Set<string>();
-      let current: GameNode | null = targetNode;
-      
-      // 타겟 노드부터 루트까지 거슬러 올라가며 새로운 메인 패스 구성
-      while (current) {
-        newMainPath.add(current.id);
-        current = this.findNodeById(current.parentId || '');
+    // 2. 타겟 노드부터 루트까지 거슬러 올라가며 메인 패스 설정
+    let current: GameNode | null = targetNode;
+    while (current) {
+      newMainPath.add(current.id);
+      if (current.parentId) {
+        current = this.findNodeById(current.parentId);
+      } else {
+        break;
       }
-
-      this.gameTree.mainPath = newMainPath;
     }
 
-    // 3. 해당 노드로 이동
+    // 3. 타겟 노드의 첫 번째 자식들도 메인 패스에 추가
+    const addFirstChildrenToMainPath = (node: GameNode) => {
+      if (node.children.length > 0) {
+        const firstChild = node.children[0];
+        newMainPath.add(firstChild.id);
+        addFirstChildrenToMainPath(firstChild);
+      }
+    };
+    addFirstChildrenToMainPath(targetNode);
+
+    // 4. 메인 패스 업데이트
+    this.gameTree.mainPath = newMainPath;
+
+    // 5. 현재 노드 업데이트 및 UI 갱신
     this.navigateToNode(targetNodeId);
     this.notifyStateChange();
   }

@@ -77,7 +77,7 @@ export default function GameTree({
           key={`${from.id}-${to.id}`}
           d={path}
           fill="none"
-          stroke={gameTree.mainPath.has(to.id) ? '#4B5563' : '#9CA3AF'}
+          stroke={gameTree.mainPath.has(to.id) ? '#00bcff' : '#9CA3AF'}
           strokeWidth="1"
         />
       );

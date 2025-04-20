@@ -26,7 +26,7 @@ export default function GameTreeNode({
           d={`M 0 -${radius+1} L ${radius+1} 0 L 0 ${radius+1} L -${radius+1} 0 Z`}
           fill="#EAB308"  // 어두운 노란색
           stroke="#78716C" // 회색 테두리
-          strokeWidth={0.5}
+          strokeWidth={1}
           className="transition-colors cursor-pointer"
           onClick={() => onClick(node.id)}
         />
@@ -36,8 +36,8 @@ export default function GameTreeNode({
           <circle
             r={radius}
             fill={isBlack ? '#000' : '#fff'}
-            stroke={isMainPath ? '#3B82F6' : '#9CA3AF'}
-            strokeWidth={0.5}
+            stroke={isMainPath ? '#00bcff' : '#9CA3AF'}
+            strokeWidth={1}
             className="transition-colors cursor-pointer"
             onClick={() => onClick(node.id)}
           />
@@ -45,7 +45,7 @@ export default function GameTreeNode({
           {/* 선택 표시 */}
           {isSelected && (
             <circle
-              r={radius + 1}
+              r={radius + 0.5}
               fill="none"
               stroke="#00bcff"
               strokeWidth={2}

@@ -483,6 +483,38 @@ export class Game {
         if (node.data.comment) {
           sgf += `C[${node.data.comment}]`;
         }
+
+        // 마커 추가
+        if (node.data.markers && node.data.markers.length > 0) {
+          const markerGroups = {
+            TR: [] as string[], // triangle
+            SQ: [] as string[], // square
+            CR: [] as string[], // circle
+            MA: [] as string[], // cross
+            LB: [] as string[], // label
+          };
+
+          node.data.markers.forEach(marker => {
+            const coord = `[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}]`;
+            switch (marker.type) {
+              case 'triangle': markerGroups.TR.push(coord); break;
+              case 'square': markerGroups.SQ.push(coord); break;
+              case 'circle': markerGroups.CR.push(coord); break;
+              case 'cross': markerGroups.MA.push(coord); break;
+              case 'letter':
+                if (marker.label) {
+                  markerGroups.LB.push(`[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}:${marker.label}]`);
+                }
+                break;
+            }
+          });
+
+          Object.entries(markerGroups).forEach(([type, coords]) => {
+            if (coords.length > 0) {
+              sgf += `${type}${coords.join('')}`;
+            }
+          });
+        }
       }
 
       // 자식 노드가 있는 경우
@@ -679,7 +711,8 @@ export class Game {
       children: [],
       data: {
         move: { x: xPos, y: yPos, color: this.turn },
-        comment: '' // 초기 코멘트 설정
+        comment: '',
+        markers: [] // 초기 마커 배열 설정
       }
     };
 
@@ -781,6 +814,12 @@ export class Game {
     // 5. 보드 상태 복원
     this.restoreGameState(targetNode);
 
+    // 마커 상태 동기화 추가
+    this.markers = targetNode.data.markers || [];
+    if (this.gameState) {
+      this.gameState.markers = this.markers;
+    }
+
     // 코멘트 상태 동기화 추가
     if (this.gameState) {
       this.gameState.comment = targetNode.data.comment || '';
@@ -804,6 +843,12 @@ export class Game {
         // 턴 업데이트
         this.turn = move.color === Stone.Black ? Stone.White : Stone.Black;
       }
+    }
+
+    // 마커 상태 복원
+    this.markers = targetNode.data.markers || [];
+    if (this.gameState) {
+      this.gameState.markers = this.markers;
     }
   }
 
@@ -1213,28 +1258,41 @@ export class Game {
   }
 
   public addMarker(x: number, y: number, type: string, label?: string): void {
+    if (!this.currentNode) return;
     
-    const existingIndex = this.markers.findIndex(m => m.x === x && m.y === y);
-  
+    // 현재 노드의 마커 배열 초기화
+    if (!this.currentNode.data.markers) {
+      this.currentNode.data.markers = [];
+    }
+    
+    // 기존 마커 제거
+    const existingIndex = this.currentNode.data.markers.findIndex(
+      m => m.x === x && m.y === y
+    );
     if (existingIndex !== -1) {
-      // 기존 마커 삭제
-      this.markers.splice(existingIndex, 1);
-      if (this.gameState && this.gameState.markers) {
-        this.gameState.markers = this.gameState.markers.filter(m => !(m.x === x && m.y === y));
-      }
+      this.currentNode.data.markers.splice(existingIndex, 1);
     }
-  
-    const moveNum = this.gameState?.moveNum ?? 0;
-    const marker = { x, y, type, label, moveNum };
-  
+    
     // 새 마커 추가
-    this.markers.push(marker);
+    const marker = {
+      x,
+      y,
+      type,
+      label,
+      moveNum: this.gameState?.moveNum ?? 0
+    };
+    
+    // GameNode에 마커 추가
+    this.currentNode.data.markers.push(marker);
+    
+    // GameState와 동기화
     if (this.gameState) {
-      this.gameState.markers = [...(this.gameState.markers ?? []), marker];
+      this.gameState.markers = [...this.currentNode.data.markers];
     }
-  
+    
     this.notifyStateChange();
   }
+
   public setStateChangeCallback(cb: () => void): void {
     this.stateChangeCallback = cb;
   }

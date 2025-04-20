@@ -73,9 +73,15 @@ export interface GameBoardConfig {
 
 // NodeData의 인덱스 시그니처를 더 구체적인 타입으로 변경
 export interface NodeData {
-  [key: string]: string | number | Move | undefined;  // any 대신 구체적인 유니온 타입 사용
   move?: Move;
   comment?: string;
+  markers?: {
+    x: number;
+    y: number;
+    type: string;
+    label?: string;
+    moveNum?: number;
+  }[];
 }
 
 export interface GameNode {

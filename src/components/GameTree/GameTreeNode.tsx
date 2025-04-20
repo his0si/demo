@@ -24,8 +24,8 @@ export default function GameTreeNode({
       {isRoot ? (
         <path
           d={`M 0 -${radius+1} L ${radius+1} 0 L 0 ${radius+1} L -${radius+1} 0 Z`}
-          fill="#EAB308"  // 어두운 노란색
-          stroke="#78716C" // 회색 테두리
+          fill="#ffbf00"  // 어두운 노란색
+          stroke="#00bcff" // 회색 테두리
           strokeWidth={1}
           className="transition-colors cursor-pointer"
           onClick={() => onClick(node.id)}

@@ -672,7 +672,6 @@ export class Game {
     
     // 이동을 기록하고 턴 변경
     this.lastMove = this.intersections[xPos][yPos];
-    const success = true;
 
     const newNode: GameNode = {
       id: Math.random().toString(36).slice(2),

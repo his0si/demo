@@ -238,30 +238,29 @@ export default function Board({
     // 마지막 수 표시
     if (lastMoveMarkers?.current) {
       const { xPos, yPos, stone } = lastMoveMarkers.current;
-      const stroke = stone === StoneEnum.Black ? 'white' : 'black';
+      const strokeColor = stone === StoneEnum.Black ? 'white' : 'black';
 
       svg.append('circle')
         .attr('cx', stoneRadius + xPos * (width / size))
         .attr('cy', stoneRadius + yPos * (height / size))
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-current')
-        .attr('fill', stone === StoneEnum.Black ? 'black' : 'white')
-        .attr('stroke', stroke)
-        .attr('stroke-width', 2);
+        .attr('fill', strokeColor)
+        .attr('fill-opacity', 0.5);
     }
 
     if (lastMoveMarkers?.next) {
       const { xPos, yPos, stone } = lastMoveMarkers.next;
-      const stroke = stone === StoneEnum.White ? 'black' : 'white';
+      const strokeColor = stone === StoneEnum.White ? 'black' : 'white';
 
       svg.append('circle')
         .attr('cx', stoneRadius + xPos * (width / size))
         .attr('cy', stoneRadius + yPos * (height / size))
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-next')
-        .attr('fill', stone === StoneEnum.White ? 'white' : 'black')
-        .attr('stroke', stroke)
-        .attr('stroke-width', 2);
+        .attr('fill', strokeColor)
+        .attr('fill-opacity', 0.9);
+
     }
     
     // 게임이 끝났을 때 영역 표시

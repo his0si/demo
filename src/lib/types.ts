@@ -70,3 +70,90 @@ export interface GameBoardConfig {
   yLines: number;
   showCoordinates?: boolean;
 }
+
+// NodeData의 인덱스 시그니처를 더 구체적인 타입으로 변경
+export interface NodeData {
+  move?: Move;
+  comment?: string;
+  markers?: {
+    x: number;
+    y: number;
+    type: string;
+    label?: string;
+    moveNum?: number;
+  }[];
+}
+
+export interface GameNode {
+  id: string;
+  parentId: string | null;
+  children: GameNode[];
+  data: NodeData;
+}
+
+export interface GameTree {
+  root: GameNode;
+  currentNodeId: string;
+  mainPath: Set<string>;
+  get(id: string): GameNode | undefined;
+}
+
+// 게임보드 관련 타입
+export interface Vertex {
+  x: number;
+  y: number;
+}
+
+export interface BoardLine {
+  v1: Vertex;
+  v2: Vertex;
+  type: 'arrow' | 'line';
+}
+
+export interface BoardMarker {
+  type: 'circle' | 'cross' | 'square' | 'triangle' | 'label' | 'point';
+  label?: string;
+}
+
+// 보드 정보 인터페이스 추가
+export interface BoardInfo {
+  vertex: Vertex;
+  type: 'variation' | 'sibling';
+  moveNumber?: number;
+}
+
+export interface BoardState {
+  signMap: number[][];
+  markers: (BoardMarker | null)[][];
+  lines: BoardLine[];
+  childrenInfo: BoardInfo[];  // any를 BoardInfo로 변경
+  siblingsInfo: BoardInfo[];  // any를 BoardInfo로 변경
+  currentVertex?: [number, number];
+}
+
+export interface GameTreeNodeProps {
+  node: GameNode;
+  isMainPath: boolean;
+  isSelected: boolean;
+  onClick: (nodeId: string) => void;
+  style?: React.CSSProperties;
+}
+
+export interface Move {
+  x: number;
+  y: number;
+  color: Stone;
+}
+
+export interface GameTreeInteractions {
+  navigateToNode: (nodeId: string) => void;
+  createVariation: (parentId: string, move: Move) => void;
+  deleteVariation: (nodeId: string) => void;
+  promoteVariation: (nodeId: string) => void;
+}
+
+export interface MatrixDictParams {
+  nodes: GameNode[];
+  currentNodeId: string;
+  onNodeClick: (nodeId: string) => void;  // nodeId 매개변수 추가
+}

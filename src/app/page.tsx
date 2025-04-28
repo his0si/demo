@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import LandingPage from '@/components/LandingPage';
 import GameBoard from '@/components/GameBoard';
 import NavBar from '@/components/NavBar';
@@ -20,15 +20,10 @@ export default function Home() {
     }
   }, [status, session, isGameStarted, startGame]);
   
-  const handleLogoClick = () => {
-    signOut({ redirect: true, callbackUrl: '/' });
-  };
-  
   return (
     <>
       {isGameStarted ? (
         <div className="min-h-screen flex flex-col">
-          <NavBar onLogoClick={handleLogoClick} />
           
           <main className="flex-grow">
             <GameBoard />

@@ -5,10 +5,10 @@ import {
   GameState, 
   Territory, 
   Hashable,
-  Pointer
+  Pointer,
+  GameTree,
+  GameNode
 } from './types';
-
-import * as FileSaver from 'file-saver';
 
 /**
  * HashSet 클래스 구현
@@ -193,7 +193,9 @@ export class Game {
   private claimedTerritories: Territory[] = [];
   private claimedTerritoryLookup: HashSet<Intersection> = new HashSet();
   private stateChangeCallback: (() => void) | null = null;
-
+  private gameTree: GameTree;
+  private nodeMap: Map<string, GameNode> = new Map();
+  private currentNode: GameNode;
   constructor(
     xLines: number = 19, 
     yLines: number = 19,
@@ -205,6 +207,49 @@ export class Game {
     
     this.intersections = Game.initIntersections(xLines, yLines);
     this.gameState = this.newGameState();
+    const rootNode = {
+      id: 'root',
+      parentId: null,
+      children: [],
+      data: {
+        move: { x: -1, y: -1, color: Stone.Black }
+      }
+    };
+
+    // 루트 노드를 Map에 추가
+    this.nodeMap.set(rootNode.id, rootNode);
+
+    this.gameTree = {
+      root: rootNode,
+      currentNodeId: 'root',
+      mainPath: new Set(['root']),
+      get: (id: string): GameNode => {
+        // Map에서 먼저 검색
+        const node = this.nodeMap.get(id);
+        if (node) return node;
+
+        // Map에 없는 경우 트리 순회로 fallback
+        const traverse = (node: GameNode): GameNode | null => {
+          if (node.id === id) return node;
+          for (const child of node.children) {
+            const found = traverse(child);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const result = traverse(this.gameTree.root);
+        if (!result) {
+          throw new Error(`Node with id ${id} not found`);
+        }
+
+        // 찾은 노드를 Map에 캐시
+        this.nodeMap.set(id, result);
+        return result;
+      }
+    };
+
+    this.currentNode = rootNode;
   }
 
   /**
@@ -424,18 +469,76 @@ export class Game {
   /**
    * SGF 파일로 저장
    */
-  public saveSGF(): void {
-    const sgfBlob = new Blob([this.getSGF()], { type: "text/plain;charset=utf-8" });
-    const date = new Date();
-    const yy = String(date.getFullYear()).slice(-2);
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    const dateString = `${yy}${mm}${dd}-${hh}${min}`;
-    const fileName = `Goggle-${dateString}.sgf`.replace(/[<>:"/\\|?*]/g, '_');
+  public saveSGF(): string {
+    const header = `(;GM[1]FF[4]CA[UTF-8]AP[Goggle:1.0]KM[6.5]SZ[${this.xLines}]DT[${new Date().toISOString().split('T')[0]}]`;
 
-    FileSaver.saveAs(sgfBlob, fileName);
+    const serializeNode = (node: GameNode): string => {
+      let sgf = '';
+      
+      // 현재 노드의 데이터를 SGF로 변환
+      if (node.id !== 'root') {
+        const move = node.data.move!;
+        sgf += `;${move.color === Stone.Black ? 'B' : 'W'}[${this.convertToSGFCoord(move.x, move.y)}]`;
+        
+        if (node.data.comment) {
+          sgf += `C[${node.data.comment}]`;
+        }
+
+        // 마커 추가
+        if (node.data.markers && node.data.markers.length > 0) {
+          const markerGroups = {
+            TR: [] as string[], // triangle
+            SQ: [] as string[], // square
+            CR: [] as string[], // circle
+            MA: [] as string[], // cross
+            LB: [] as string[], // label
+          };
+
+          node.data.markers.forEach(marker => {
+            const coord = `[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}]`;
+            switch (marker.type) {
+              case 'triangle': markerGroups.TR.push(coord); break;
+              case 'square': markerGroups.SQ.push(coord); break;
+              case 'circle': markerGroups.CR.push(coord); break;
+              case 'cross': markerGroups.MA.push(coord); break;
+              case 'letter':
+                if (marker.label) {
+                  markerGroups.LB.push(`[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}:${marker.label}]`);
+                }
+                break;
+            }
+          });
+
+          Object.entries(markerGroups).forEach(([type, coords]) => {
+            if (coords.length > 0) {
+              sgf += `${type}${coords.join('')}`;
+            }
+          });
+        }
+      }
+
+      // 자식 노드가 있는 경우
+      if (node.children.length > 0) {
+        // 모든 자식이 변화도가 되어야 함
+        const variations = node.children.map(child => serializeNode(child));
+        
+        if (variations.length === 1) {
+          // 자식이 하나면 그대로 이어서 작성
+          sgf += variations[0];
+        } else {
+          // 자식이 여러 개면 각각을 괄호로 감싸서 병렬로 작성
+          sgf += variations.map(v => `(${v})`).join('');
+        }
+      }
+
+      return sgf;
+    };
+
+    return header + serializeNode(this.gameTree.root) + ')';
+  }
+
+  private convertToSGFCoord(x: number, y: number): string {
+    return String.fromCharCode(97 + x) + String.fromCharCode(97 + y);
   }
 
   /**
@@ -601,6 +704,40 @@ export class Game {
     
     // 이동을 기록하고 턴 변경
     this.lastMove = this.intersections[xPos][yPos];
+
+    const newNode: GameNode = {
+      id: Math.random().toString(36).slice(2),
+      parentId: this.currentNode.id,
+      children: [],
+      data: {
+        move: { x: xPos, y: yPos, color: this.turn },
+        comment: '',
+        markers: [] // 초기 마커 배열 설정
+      }
+    };
+
+    // 새로운 메인 패스 생성
+    const newMainPath = new Set(['root']);
+    
+    // 새 노드부터 루트까지의 경로를 메인 패스로 설정
+    let current: GameNode | null = newNode;
+    while (current) {
+      newMainPath.add(current.id);
+      if (current.parentId) {
+        current = this.findNodeById(current.parentId);
+      } else {
+        break;
+      }
+    }
+
+    // 게임 트리 업데이트
+    this.currentNode.children.push(newNode);
+    this.nodeMap.set(newNode.id, newNode);
+    this.currentNode = newNode;
+    this.gameTree.currentNodeId = newNode.id;
+    this.gameTree.mainPath = newMainPath;  // 메인 패스 업데이트
+
+    this.notifyStateChange();
     this.nextTurn();
     return true;
   }
@@ -619,25 +756,99 @@ export class Game {
     }
   }
 
-  /**
-   * 무르기
-   */
   public undo(): void {
-    if (this.gameState?.prevGameState) {
-      this.loadGameState(this.gameState.prevGameState);
-      this.claimedTerritories = [];
-      this.claimedTerritoryLookup = new HashSet();
-      this.notifyStateChange();
+    if (!this.currentNode || this.currentNode.id === 'root') return;
+
+    const parentNode = this.findNodeById(this.currentNode.parentId!);
+    if (parentNode) {
+      // 상위 노드로 이동
+      this.navigateToNode(parentNode.id);
     }
   }
 
-  /**
-   * 앞으로 가기
-   */
   public redo(): void {
-    if (this.gameState?.nextGameState) {
-      this.loadGameState(this.gameState.nextGameState);
-      this.notifyStateChange();
+    if (!this.currentNode) return;
+
+    // 현재 노드의 자식들 중에서 가장 먼저 만들어진 자식 노드를 선택
+    const nextNode = this.currentNode.children[0];
+    if (nextNode) {
+      this.navigateToNode(nextNode.id);
+    }
+  }
+
+  public navigateToNode(nodeId: string): void {
+    const targetNode = this.findNodeById(nodeId);
+    if (!targetNode) return;
+
+    // 1. 새로운 메인 패스 생성
+    const newMainPath = new Set(['root']);
+    
+    // 2. 선택된 노드부터 루트까지의 경로를 메인 패스로 설정
+    let current: GameNode | null = targetNode;
+    while (current) {
+      newMainPath.add(current.id);
+      if (current.parentId) {
+        current = this.findNodeById(current.parentId);
+      } else {
+        break;
+      }
+    }
+
+    // 3. 첫 번째 자식들도 메인 패스에 포함
+    current = targetNode;
+    while (current && current.children && current.children.length > 0) {
+      const firstChild: GameNode = current.children[0];
+      if (firstChild) {
+        newMainPath.add(firstChild.id);
+        current = firstChild;
+      } else {
+        break;
+      }
+    }
+
+    // 4. 게임 상태 업데이트
+    this.gameTree.mainPath = newMainPath;
+    this.gameTree.currentNodeId = nodeId;
+    this.currentNode = targetNode;
+
+    // 5. 보드 상태 복원
+    this.restoreGameState(targetNode);
+
+    // 마커 상태 동기화 추가
+    this.markers = targetNode.data.markers || [];
+    if (this.gameState) {
+      this.gameState.markers = this.markers;
+    }
+
+    // 코멘트 상태 동기화 추가
+    if (this.gameState) {
+      this.gameState.comment = targetNode.data.comment || '';
+    }
+
+    this.notifyStateChange();
+  }
+
+  private restoreGameState(targetNode: GameNode): void {
+    // 보드 초기화
+    this.intersections = Game.initIntersections(this.xLines, this.yLines);
+    this.blackScore = 0;
+    this.whiteScore = 0;
+    
+    // 경로상의 모든 수를 복원
+    const path = this.getPathToNode(targetNode);
+    for (const node of path) {
+      const move = node.data.move;
+      if (move && move.x >= 0 && move.y >= 0) {
+        this.intersections[move.x][move.y].stone = move.color;
+        // 턴 업데이트
+        this.turn = move.color === Stone.Black ? Stone.White : Stone.Black;
+      }
+    }
+
+    // 마커 상태 복원
+    this.markers = targetNode.data.markers || [];
+    if (this.gameState) {
+      this.gameState.markers = this.markers;
     }
   }
 
@@ -1027,8 +1238,8 @@ export class Game {
   public getGameState(): GameState | null { return this.gameState; }
   public getCurrentAndNextMove(): { current?: Intersection; next?: Intersection } {
     return {
-      current: this.gameState?.move ?? undefined,
-      next: this.gameState?.nextGameState?.move ?? undefined
+      current: this.gameState?.prevGameState?.move ?? undefined,
+      next: this.gameState?.move ?? undefined
     };
   }
 
@@ -1047,29 +1258,136 @@ export class Game {
   }
 
   public addMarker(x: number, y: number, type: string, label?: string): void {
+    if (!this.currentNode) return;
     
-    const existingIndex = this.markers.findIndex(m => m.x === x && m.y === y);
-  
+    // 현재 노드의 마커 배열 초기화
+    if (!this.currentNode.data.markers) {
+      this.currentNode.data.markers = [];
+    }
+    
+    // 기존 마커 제거
+    const existingIndex = this.currentNode.data.markers.findIndex(
+      m => m.x === x && m.y === y
+    );
     if (existingIndex !== -1) {
-      // 기존 마커 삭제
-      this.markers.splice(existingIndex, 1);
-      if (this.gameState && this.gameState.markers) {
-        this.gameState.markers = this.gameState.markers.filter(m => !(m.x === x && m.y === y));
-      }
+      this.currentNode.data.markers.splice(existingIndex, 1);
     }
-  
-    const moveNum = this.gameState?.moveNum ?? 0;
-    const marker = { x, y, type, label, moveNum };
-  
+    
     // 새 마커 추가
-    this.markers.push(marker);
+    const marker = {
+      x,
+      y,
+      type,
+      label,
+      moveNum: this.gameState?.moveNum ?? 0
+    };
+    
+    // GameNode에 마커 추가
+    this.currentNode.data.markers.push(marker);
+    
+    // GameState와 동기화
     if (this.gameState) {
-      this.gameState.markers = [...(this.gameState.markers ?? []), marker];
+      this.gameState.markers = [...this.currentNode.data.markers];
     }
-  
+    
     this.notifyStateChange();
   }
+
   public setStateChangeCallback(cb: () => void): void {
     this.stateChangeCallback = cb;
+  }
+
+  public getGameTree(): GameTree {
+    return this.gameTree;
+  }
+
+  /**
+   * 변화도 전환
+   * @param targetNodeId 전환하고자 하는 변화도의 노드 ID
+   */
+  public switchVariation(targetNodeId: string): void {
+    const targetNode = this.findNodeById(targetNodeId);
+    if (!targetNode || !targetNode.parentId) return;
+
+    // 1. 새로운 메인 패스 생성
+    const newMainPath = new Set(['root']);
+    
+    // 2. 타겟 노드부터 루트까지 거슬러 올라가며 메인 패스 설정
+    let current: GameNode | null = targetNode;
+    while (current) {
+      newMainPath.add(current.id);
+      if (current.parentId) {
+        current = this.findNodeById(current.parentId);
+      } else {
+        break;
+      }
+    }
+
+    // 3. 타겟 노드의 첫 번째 자식들도 메인 패스에 추가
+    const addFirstChildrenToMainPath = (node: GameNode) => {
+      if (node.children.length > 0) {
+        const firstChild = node.children[0];
+        newMainPath.add(firstChild.id);
+        addFirstChildrenToMainPath(firstChild);
+      }
+    };
+    addFirstChildrenToMainPath(targetNode);
+
+    // 4. 메인 패스 업데이트
+    this.gameTree.mainPath = newMainPath;
+
+    // 5. 현재 노드 업데이트 및 UI 갱신
+    this.navigateToNode(targetNodeId);
+    this.notifyStateChange();
+  }
+
+  private findNodeById(nodeId: string): GameNode | null {
+    // Map에서 먼저 조회 (O(1) 시간 복잡도)
+    if (this.nodeMap.has(nodeId)) {
+      return this.nodeMap.get(nodeId)!;
+    }
+
+    // Map에 없는 경우 트리 순회로 fallback
+    const traverse = (node: GameNode): GameNode | null => {
+      if (node.id === nodeId) {
+        // 찾은 노드를 Map에 캐시
+        this.nodeMap.set(nodeId, node);
+        return node;
+      }
+      for (const child of node.children) {
+        const found = traverse(child);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    return traverse(this.gameTree.root);
+  }
+
+  private getPathToNode(node: GameNode): GameNode[] {
+    const path: GameNode[] = [];
+    let current: GameNode | null = node;
+
+    while (current) {
+      path.unshift(current);
+      current = current.parentId ? this.findNodeById(current.parentId) : null;
+    }
+
+    return path;
+  }
+
+  // 코멘트 업데이트 메서드 추가
+  public updateComment(comment: string): void {
+    if (!this.currentNode) return;
+    
+    // GameNode의 코멘트 업데이트
+    this.currentNode.data.comment = comment;
+    
+    // GameState의 코멘트도 동기화
+    if (this.gameState) {
+      this.gameState.comment = comment;
+    }
+
+    this.notifyStateChange();
   }
 }

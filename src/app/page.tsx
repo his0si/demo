@@ -1,9 +1,12 @@
 'use client';
 
+import React from 'react';
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import LandingPage from '@/components/LandingPage';
 import GameBoard from '@/components/GameBoard';
+import NavBar from '@/components/NavBar';
+import Footer from '@/components/Footer';
 import useGame from '@/hooks/useGame';
 
 export default function Home() {
@@ -26,25 +29,7 @@ export default function Home() {
             <GameBoard />
           </main>
           
-          <footer className="bg-gray-50 border-t border-gray-100 py-6">
-            <div className="max-w-6xl mx-auto px-6">
-              <div className="flex flex-col md:flex-row justify-between items-center">
-                <p className="text-xl font-bold tracking-tight text-gray-900">
-                  goggle<span className="text-sky-400">.</span>
-                </p>
-                
-                <div className="flex space-x-6 mt-4 md:mt-0">
-                  <a href="#" className="text-gray-500 hover:text-gray-900 transition-colors text-sm">블로그</a>
-                  <a href="#" className="text-gray-500 hover:text-gray-900 transition-colors text-sm">문의하기</a>
-                  <a href="#" className="text-gray-500 hover:text-gray-900 transition-colors text-sm">개인정보처리방침</a>
-                </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-200 flex justify-center">
-                <p className="text-sm text-gray-500">© 2025 Goggle. All rights reserved.</p>
-              </div>
-            </div>
-          </footer>
+          <Footer className="py-6" />
         </div>
       ) : (
         <LandingPage />

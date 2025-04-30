@@ -61,29 +61,36 @@ export default function GameBoard() {
         if (currentTool === 'move') {
           makeMove(x, y);
         } else {
-          const existing = game?.getGameState()?.markers?.find(
+          const currentMarkers = game?.getGameState()?.markers ?? [];
+          const existing = currentMarkers.find(
             (m) => m.x === x && m.y === y
           );
+          
           if (existing?.type === currentTool) {
             if (!game) return;
-            game.removeMarker(x, y, currentTool); // 새로운 removeMarker 메서드 사용
+            game.removeMarker(x, y, currentTool);
           } else {
             if (!game) return;
             let label: string | undefined = undefined;
+            
             if (currentTool === 'letter') {
               const allLetters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'];
-              const usedLabels = game.markers
+              const usedLabels = currentMarkers
                 .filter((m) => m.type === 'letter')
                 .map((m) => m.label);
               label = allLetters.find((ch) => !usedLabels.includes(ch)) ?? '?';
             }
+            
             if (currentTool === 'number') {
-              const usedNumbers = game.markers
+              const usedNumbers = currentMarkers
                 .filter((m) => m.type === 'number')
                 .map((m) => parseInt(m.label || '0'));
-              const nextNumber = 1 + Math.max(0, ...usedNumbers);
+              const nextNumber = usedNumbers.length > 0 
+                ? Math.max(...usedNumbers) + 1 
+                : 1;
               label = nextNumber.toString();
             }
+            
             game.addMarker(x, y, currentTool, label);
           }
         }

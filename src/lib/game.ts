@@ -475,7 +475,6 @@ export class Game {
     const serializeNode = (node: GameNode): string => {
       let sgf = '';
       
-      // 현재 노드의 데이터를 SGF로 변환
       if (node.id !== 'root') {
         const move = node.data.move!;
         sgf += `;${move.color === Stone.Black ? 'B' : 'W'}[${this.convertToSGFCoord(move.x, move.y)}]`;
@@ -491,24 +490,26 @@ export class Game {
             SQ: [] as string[], // square
             CR: [] as string[], // circle
             MA: [] as string[], // cross
-            LB: [] as string[], // label
+            LB: [] as string[], // label and number
           };
 
           node.data.markers.forEach(marker => {
-            const coord = `[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}]`;
+            const coord = `${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}`;
             switch (marker.type) {
-              case 'triangle': markerGroups.TR.push(coord); break;
-              case 'square': markerGroups.SQ.push(coord); break;
-              case 'circle': markerGroups.CR.push(coord); break;
-              case 'cross': markerGroups.MA.push(coord); break;
+              case 'triangle': markerGroups.TR.push(`[${coord}]`); break;
+              case 'square': markerGroups.SQ.push(`[${coord}]`); break;
+              case 'circle': markerGroups.CR.push(`[${coord}]`); break;
+              case 'cross': markerGroups.MA.push(`[${coord}]`); break;
               case 'letter':
+              case 'number':
                 if (marker.label) {
-                  markerGroups.LB.push(`[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}:${marker.label}]`);
+                  markerGroups.LB.push(`[${coord}:${marker.label}]`);
                 }
                 break;
             }
           });
 
+          // SGF 문자열에 마커 추가
           Object.entries(markerGroups).forEach(([type, coords]) => {
             if (coords.length > 0) {
               sgf += `${type}${coords.join('')}`;
@@ -517,16 +518,12 @@ export class Game {
         }
       }
 
-      // 자식 노드가 있는 경우
       if (node.children.length > 0) {
-        // 모든 자식이 변화도가 되어야 함
         const variations = node.children.map(child => serializeNode(child));
         
         if (variations.length === 1) {
-          // 자식이 하나면 그대로 이어서 작성
           sgf += variations[0];
         } else {
-          // 자식이 여러 개면 각각을 괄호로 감싸서 병렬로 작성
           sgf += variations.map(v => `(${v})`).join('');
         }
       }
@@ -1293,6 +1290,35 @@ export class Game {
     this.notifyStateChange();
   }
 
+  public removeMarker(x: number, y: number, type: string): void {
+    this.markers = this.markers.filter(
+      (m) => !(m.x === x && m.y === y && m.type === type)
+    );
+    
+    // SGF 노드에도 마커 제거 정보 추가
+    const currentNode = this.getCurrentNode();
+    if (currentNode) {
+      if (!currentNode.data) currentNode.data = {};
+      // 제거된 마커 정보를 SGF 노드에 기록
+      currentNode.data[`RE_${type.toUpperCase()}`] = `${x},${y}`;
+
+      // 현재 노드의 마커 배열도 업데이트
+      if (!currentNode.data.markers) {
+        currentNode.data.markers = [];
+      }
+      currentNode.data.markers = currentNode.data.markers.filter(
+        (m) => !(m.x === x && m.y === y && m.type === type)
+      );
+
+      // GameState와 동기화
+      if (this.gameState) {
+        this.gameState.markers = [...currentNode.data.markers];
+      }
+    }
+    
+    this.notifyStateChange();
+  }
+
   public setStateChangeCallback(cb: () => void): void {
     this.stateChangeCallback = cb;
   }
@@ -1389,5 +1415,9 @@ export class Game {
     }
 
     this.notifyStateChange();
+  }
+
+  public getCurrentNode(): GameNode | null {
+    return this.currentNode;
   }
 }

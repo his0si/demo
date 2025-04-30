@@ -73,7 +73,11 @@ export interface GameBoardConfig {
 
 // NodeData의 인덱스 시그니처를 더 구체적인 타입으로 변경
 export interface NodeData {
-  move?: Move;
+  move?: {
+    x: number;
+    y: number;
+    color: Stone;
+  };
   comment?: string;
   markers?: {
     x: number;
@@ -82,6 +86,7 @@ export interface NodeData {
     label?: string;
     moveNum?: number;
   }[];
+  [key: string]: any; // 동적 키를 허용하기 위한 인덱스 시그니처 추가
 }
 
 export interface GameNode {

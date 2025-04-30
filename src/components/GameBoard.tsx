@@ -66,14 +66,7 @@ export default function GameBoard() {
           );
           if (existing?.type === currentTool) {
             if (!game) return;
-            game.markers = game.markers.filter(
-              (m) => !(m.x === x && m.y === y && m.type === currentTool)
-            );
-            const state = game.getGameState();
-            if (state) {
-              state.markers = [...game.markers];
-            }
-            game.notifyStateChange();
+            game.removeMarker(x, y, currentTool); // 새로운 removeMarker 메서드 사용
           } else {
             if (!game) return;
             let label: string | undefined = undefined;

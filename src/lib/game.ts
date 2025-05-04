@@ -1382,10 +1382,31 @@ export class Game {
   public getLastMove(): Intersection | null { return this.lastMove; }
   public getGameState(): GameState | null { return this.gameState; }
   public getCurrentAndNextMove(): { current?: Intersection; next?: Intersection } {
-    return {
-      current: this.gameState?.prevGameState?.move ?? undefined,
-      next: this.gameState?.move ?? undefined
-    };
+    if (!this.currentNode) return {};
+
+    // 현재 노드의 수
+    const currentMove = this.currentNode.data.move;
+    const current = currentMove && currentMove.x >= 0 && currentMove.y >= 0
+      ? this.intersections[currentMove.x][currentMove.y]
+      : undefined;
+
+    // 이전 노드의 수 찾기
+    let prevNode = this.currentNode;
+    while (prevNode.parentId && prevNode.parentId !== 'root') {
+      const parent = this.findNodeById(prevNode.parentId);
+      if (!parent) break;
+      
+      const parentMove = parent.data.move;
+      if (parentMove && parentMove.x >= 0 && parentMove.y >= 0) {
+        return {
+          current,
+          next: this.intersections[parentMove.x][parentMove.y]
+        };
+      }
+      prevNode = parent;
+    }
+
+    return { current };
   }
 
   public getScoreWithTerritory(color: Stone): { score: number, territory: number } {

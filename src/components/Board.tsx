@@ -251,7 +251,7 @@ export default function Board({
 
     if (lastMoveMarkers?.next) {
       const { xPos, yPos, stone } = lastMoveMarkers.next;
-      const strokeColor = stone === StoneEnum.White ? 'black' : 'white';
+      const strokeColor = stone === StoneEnum.Black ? 'white' : 'black';
 
       svg.append('circle')
         .attr('cx', stoneRadius + xPos * (width / size))
@@ -260,7 +260,6 @@ export default function Board({
         .attr('class', 'last-move-next')
         .attr('fill', strokeColor)
         .attr('fill-opacity', 0.9);
-
     }
     
     // 게임이 끝났을 때 영역 표시

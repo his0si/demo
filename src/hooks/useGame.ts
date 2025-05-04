@@ -63,20 +63,21 @@ export default function useGame() {
   
   // SGF 로드
   const loadSGF = useCallback((sgfContent: string) => {
-    const loadedGame = Game.loadSGF(sgfContent);
-    if (loadedGame) {
-      loadedGame.setStateChangeCallback(updateGameState);
-      gameRef.current = loadedGame;
-      setGame(loadedGame);
+    if (!gameRef.current) {
+      gameRef.current = new Game(19, 19, updateGameState);
+    }
+    const success = gameRef.current.loadSGF(sgfContent);
+    if (success) {
+      setGame(gameRef.current);
       setIsGameStarted(true);
-      setBoardState([...loadedGame.intersections]);
-      setBlackScore(loadedGame.getBlackScore());
-      setWhiteScore(loadedGame.getWhiteScore());
-      setCurrentPlayer(loadedGame.getTurn());
-      const lastMove = loadedGame.getLastMove();
+      setBoardState([...gameRef.current.intersections]);
+      setBlackScore(gameRef.current.getBlackScore());
+      setWhiteScore(gameRef.current.getWhiteScore());
+      setCurrentPlayer(gameRef.current.getTurn());
+      const lastMove = gameRef.current.getLastMove();
       setLastMove(lastMove ? {x: lastMove.xPos, y: lastMove.yPos} : null);
-      setMarkers(loadedGame.markers ?? []);
-      setComment(loadedGame.getGameState()?.comment ?? '');
+      setMarkers(gameRef.current.markers ?? []);
+      setComment(gameRef.current.getGameState()?.comment ?? '');
     }
   }, [updateGameState]);
   

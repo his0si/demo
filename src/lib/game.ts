@@ -268,8 +268,7 @@ export class Game {
   /**
    * SGF 파일 로드
    */
-  public static loadSGF(sgfContent: string): Game | null {
-    const game = new Game();
+  public loadSGF(sgfContent: string): boolean {
     sgfContent = sgfContent.trim();
     
     // 헤더 정보 파싱
@@ -280,11 +279,21 @@ export class Game {
       const sizeMatch = header.match(/SZ\[(\d+)\]/);
       if (sizeMatch) {
         const size = parseInt(sizeMatch[1]);
-        game.xLines = size;
-        game.yLines = size;
-        game.intersections = Game.initIntersections(size, size);
+        this.xLines = size;
+        this.yLines = size;
+        this.intersections = Game.initIntersections(size, size);
       }
     }
+
+    // 게임 상태 초기화
+    this.gameState = null;
+    this.lastMove = null;
+    this.turn = Stone.Black;
+    this.blackScore = 0;
+    this.whiteScore = 0;
+    this.markers = [];
+    this.claimedTerritories = [];
+    this.claimedTerritoryLookup = new HashSet();
 
     // 루트 노드 초기화
     const rootNode: GameNode = {
@@ -297,12 +306,13 @@ export class Game {
         comment: ''
       }
     };
-    game.nodeMap.set(rootNode.id, rootNode);
-    game.gameTree = {
+    this.nodeMap.clear(); // 기존 노드 맵 초기화
+    this.nodeMap.set(rootNode.id, rootNode);
+    this.gameTree = {
       root: rootNode,
       currentNodeId: 'root',
       mainPath: new Set(['root']),
-      get: (id: string) => game.findNodeById(id) || rootNode
+      get: (id: string) => this.findNodeById(id) || rootNode
     };
 
     // 노드 데이터 파싱 함수
@@ -419,7 +429,7 @@ export class Game {
                 }
               };
               currentNode.children.push(newNode);
-              game.nodeMap.set(newNode.id, newNode);
+              this.nodeMap.set(newNode.id, newNode);
               currentNode = newNode;
             }
             buffer = '';
@@ -448,7 +458,7 @@ export class Game {
                 }
               };
               currentNode.children.push(newNode);
-              game.nodeMap.set(newNode.id, newNode);
+              this.nodeMap.set(newNode.id, newNode);
               currentNode = newNode;
             }
             buffer = '';
@@ -475,7 +485,7 @@ export class Game {
             }
           };
           currentNode.children.push(newNode);
-          game.nodeMap.set(newNode.id, newNode);
+          this.nodeMap.set(newNode.id, newNode);
         }
       }
     };
@@ -496,20 +506,20 @@ export class Game {
     parseSGF(mainContent, rootNode);
 
     // 메인 패스 설정
-    game.updateMainPath();
+    this.updateMainPath();
     
     // 현재 노드를 마지막 노드로 설정
     let lastNode = rootNode;
     while (lastNode.children.length > 0) {
       lastNode = lastNode.children[0];
     }
-    game.currentNode = lastNode;
-    game.gameTree.currentNodeId = lastNode.id;
+    this.currentNode = lastNode;
+    this.gameTree.currentNodeId = lastNode.id;
     
-    // 게임 상태 업데이트
-    game.applyNodeToBoard(lastNode);
+    // navigateToNode를 사용하여 게임트리 상태 즉시 업데이트
+    this.navigateToNode(lastNode.id);
     
-    return game;
+    return true;
   }
 
   /**

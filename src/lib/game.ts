@@ -315,11 +315,11 @@ export class Game {
       const commentMatch = content.match(/C\[(.*?)\](?=[\s\);]|$)/);
       const markers: { x: number; y: number; type: string; label?: string }[] = [];
 
-      // 마커 파싱
-      const markerRegex = /(TR|SQ|CR|MA|LB)\[([a-z]{2})(?::([^\]]+))?\]/g;
+      // 일반 마커 파싱 (LB 제외)
+      const markerRegex = /(TR|SQ|CR|MA)\[([a-z]{2})\]/g;
       let markerMatch;
       while ((markerMatch = markerRegex.exec(content)) !== null) {
-        const [_, type, pos, label] = markerMatch;
+        const [_, type, pos] = markerMatch;
         const x = pos.charCodeAt(0) - 97;
         const y = pos.charCodeAt(1) - 97;
         
@@ -327,14 +327,31 @@ export class Game {
           TR: 'triangle',
           SQ: 'square',
           CR: 'circle',
-          MA: 'cross',
-          LB: 'letter'
+          MA: 'cross'
         }[type] || type.toLowerCase();
 
-        markers.push({ x, y, type: markerType, label });
+        markers.push({ x, y, type: markerType });
       }
 
-      // 다중 마커 파싱 (예: SQ[je][ke])
+      // LB 마커 파싱 (라벨 포함)
+      const lbRegex = /LB(?:\[([a-z]{2}):([^\]]+)\])+/g;
+      let lbMatch;
+      while ((lbMatch = lbRegex.exec(content)) !== null) {
+        const fullMatch = lbMatch[0];
+        const lbMarkers = fullMatch.match(/\[([a-z]{2}):([^\]]+)\]/g);
+        if (lbMarkers) {
+          for (const marker of lbMarkers) {
+            const [_, pos, label] = marker.match(/\[([a-z]{2}):([^\]]+)\]/) || [];
+            if (pos) {
+              const x = pos.charCodeAt(0) - 97;
+              const y = pos.charCodeAt(1) - 97;
+              markers.push({ x, y, type: 'letter', label });
+            }
+          }
+        }
+      }
+
+      // 다중 마커 파싱 (LB 제외)
       const multiMarkerRegex = /(TR|SQ|CR|MA)\[([a-z]{2})\](?:\[([a-z]{2})\])*/g;
       let multiMatch;
       while ((multiMatch = multiMarkerRegex.exec(content)) !== null) {

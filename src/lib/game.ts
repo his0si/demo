@@ -1390,20 +1390,16 @@ export class Game {
       ? this.intersections[currentMove.x][currentMove.y]
       : undefined;
 
-    // 이전 노드의 수 찾기
-    let prevNode = this.currentNode;
-    while (prevNode.parentId && prevNode.parentId !== 'root') {
-      const parent = this.findNodeById(prevNode.parentId);
-      if (!parent) break;
-      
-      const parentMove = parent.data.move;
-      if (parentMove && parentMove.x >= 0 && parentMove.y >= 0) {
+    // 다음 노드의 수 찾기
+    if (this.currentNode.children.length > 0) {
+      const nextNode = this.currentNode.children[0];
+      const nextMove = nextNode.data.move;
+      if (nextMove && nextMove.x >= 0 && nextMove.y >= 0) {
         return {
           current,
-          next: this.intersections[parentMove.x][parentMove.y]
+          next: this.intersections[nextMove.x][nextMove.y]
         };
       }
-      prevNode = parent;
     }
 
     return { current };

@@ -312,7 +312,15 @@ export class Game {
       comment: string;
     } => {
       const moveMatch = content.match(/(B|W)\[([a-z]{2})\]/);
-      const commentMatch = content.match(/C\[(.*?)\](?=[\s\);]|$)/);
+      
+      // 코멘트 파싱 개선
+      let comment = '';
+      const commentRegex = /C\[((?:[^[\]]|\\\])*?)\](?=[\s\);]|$)/;
+      const commentMatch = content.match(commentRegex);
+      if (commentMatch) {
+        comment = commentMatch[1].replace(/\\]/g, ']');
+      }
+
       const markers: { x: number; y: number; type: string; label?: string }[] = [];
 
       // 일반 마커 파싱 (LB 제외)
@@ -381,7 +389,7 @@ export class Game {
           color: moveMatch[1] === 'B' ? Stone.Black : Stone.White
         } : undefined,
         markers,
-        comment: commentMatch ? commentMatch[1].replace(/\\]/g, ']') : ''
+        comment
       };
     };
 

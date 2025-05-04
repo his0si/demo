@@ -850,37 +850,50 @@ export class Game {
     // 이동을 기록하고 턴 변경
     this.lastMove = this.intersections[xPos][yPos];
 
-    const newNode: GameNode = {
-      id: Math.random().toString(36).slice(2),
-      parentId: this.currentNode.id,
-      children: [],
-      data: {
-        move: { x: xPos, y: yPos, color: this.turn },
-        comment: '',
-        markers: [] // 초기 마커 배열 설정
-      }
-    };
+    // 현재 노드의 자식들 중에서 동일한 수가 있는지 확인
+    const existingNode = this.currentNode.children.find(child => 
+      child.data.move && 
+      child.data.move.x === xPos && 
+      child.data.move.y === yPos
+    );
 
-    // 새로운 메인 패스 생성
-    const newMainPath = new Set(['root']);
-    
-    // 새 노드부터 루트까지의 경로를 메인 패스로 설정
-    let current: GameNode | null = newNode;
-    while (current) {
-      newMainPath.add(current.id);
-      if (current.parentId) {
-        current = this.findNodeById(current.parentId);
-      } else {
-        break;
+    if (existingNode) {
+      // 동일한 수가 있는 경우 해당 분기로 이동
+      this.navigateToNode(existingNode.id);
+    } else {
+      // 새로운 분기 생성
+      const newNode: GameNode = {
+        id: Math.random().toString(36).slice(2),
+        parentId: this.currentNode.id,
+        children: [],
+        data: {
+          move: { x: xPos, y: yPos, color: this.turn },
+          comment: '',
+          markers: []
+        }
+      };
+
+      // 새로운 메인 패스 생성
+      const newMainPath = new Set(['root']);
+      
+      // 새 노드부터 루트까지의 경로를 메인 패스로 설정
+      let current: GameNode | null = newNode;
+      while (current) {
+        newMainPath.add(current.id);
+        if (current.parentId) {
+          current = this.findNodeById(current.parentId);
+        } else {
+          break;
+        }
       }
+
+      // 게임 트리 업데이트
+      this.currentNode.children.push(newNode);
+      this.nodeMap.set(newNode.id, newNode);
+      this.currentNode = newNode;
+      this.gameTree.currentNodeId = newNode.id;
+      this.gameTree.mainPath = newMainPath;
     }
-
-    // 게임 트리 업데이트
-    this.currentNode.children.push(newNode);
-    this.nodeMap.set(newNode.id, newNode);
-    this.currentNode = newNode;
-    this.gameTree.currentNodeId = newNode.id;
-    this.gameTree.mainPath = newMainPath;  // 메인 패스 업데이트
 
     this.notifyStateChange();
     this.nextTurn();

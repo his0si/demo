@@ -325,10 +325,11 @@ export class Game {
       
       // 코멘트 파싱 개선
       let comment = '';
-      const commentRegex = /C\[((?:[^[\]]|\\\])*?)\](?=[\s\);]|$)/;
+      const commentRegex = /C\[((?:[^[\]]|\\\])*?)\]/;
       const commentMatch = content.match(commentRegex);
       if (commentMatch) {
         comment = commentMatch[1].replace(/\\]/g, ']');
+        console.log('Parsed comment:', comment); // 디버깅용 로그 추가
       }
 
       const markers: { x: number; y: number; type: string; label?: string }[] = [];
@@ -938,78 +939,79 @@ export class Game {
 
   public navigateToNode(nodeId: string): void {
     const targetNode = this.findNodeById(nodeId);
-    if (!targetNode) return;
+    if (!targetNode) {
+      console.error('Target node not found:', nodeId);
+      return;
+    }
 
-    // 1. 새로운 메인 패스 생성
-    const newMainPath = new Set(['root']);
-    
-    // 2. 선택된 노드부터 루트까지의 경로를 메인 패스로 설정
-    let current: GameNode | null = targetNode;
-    while (current) {
-      newMainPath.add(current.id);
-      if (current.parentId) {
-        current = this.findNodeById(current.parentId);
-      } else {
-        break;
+    // 현재 노드의 코멘트와 마커 정보 저장
+    if (this.currentNode) {
+      if (this.gameState?.comment) {
+        this.currentNode.data.comment = this.gameState.comment;
+      }
+      if (this.markers.length > 0) {
+        this.currentNode.data.markers = [...this.markers];
       }
     }
 
-    // 3. 첫 번째 자식들도 메인 패스에 포함
-    current = targetNode;
-    while (current && current.children && current.children.length > 0) {
-      const firstChild: GameNode = current.children[0];
-      if (firstChild) {
-        newMainPath.add(firstChild.id);
-        current = firstChild;
-      } else {
-        break;
-      }
-    }
-
-    // 4. 게임 상태 업데이트
-    this.gameTree.mainPath = newMainPath;
-    this.gameTree.currentNodeId = nodeId;
-    this.currentNode = targetNode;
-
-    // 5. 보드 상태 복원
+    // 게임 상태 복원
     this.restoreGameState(targetNode);
 
-    // 마커 상태 동기화 추가
-    this.markers = targetNode.data.markers || [];
-    if (this.gameState) {
-      this.gameState.markers = this.markers;
-    }
+    // 현재 노드 업데이트
+    this.currentNode = targetNode;
+    this.gameTree.currentNodeId = nodeId;
 
-    // 코멘트 상태 동기화 추가
-    if (this.gameState) {
-      this.gameState.comment = targetNode.data.comment || '';
-    }
+    // 메인 경로 업데이트
+    this.updateMainPath();
 
-    this.notifyStateChange();
+    // 상태 변경 알림
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback();
+    }
   }
 
   private restoreGameState(targetNode: GameNode): void {
-    // 보드 초기화
+    // 1. 보드 초기화
     this.intersections = Game.initIntersections(this.xLines, this.yLines);
+    this.turn = Stone.Black;
     this.blackScore = 0;
     this.whiteScore = 0;
+    this.lastMove = null;
+    this.markers = [];
     
-    // 경로상의 모든 수를 복원
+    // 2. 루트부터 타겟 노드까지의 경로 찾기
     const path = this.getPathToNode(targetNode);
+
+    // 3. 경로를 따라가며 수를 놓기
     for (const node of path) {
       const move = node.data.move;
       if (move && move.x >= 0 && move.y >= 0) {
         this.intersections[move.x][move.y].stone = move.color;
-        // 턴 업데이트
-        this.turn = move.color === Stone.Black ? Stone.White : Stone.Black;
+        this.lastMove = this.intersections[move.x][move.y];
+        this.turn = this.getOtherPlayer(move.color);
+      }
+
+      // 마커 복원
+      if (node.data.markers) {
+        this.markers = [...node.data.markers];
+      }
+
+      // 코멘트 복원
+      if (node.data.comment) {
+        if (!this.gameState) {
+          this.gameState = this.newGameState(node.data.comment);
+        } else {
+          this.gameState.comment = node.data.comment;
+        }
+        console.log('Restored comment:', node.data.comment); // 디버깅용 로그 추가
       }
     }
 
-    // 마커 상태 복원
-    this.markers = targetNode.data.markers || [];
-    if (this.gameState) {
-      this.gameState.markers = this.markers;
+    // 4. 게임 상태 업데이트
+    if (!this.gameState) {
+      this.gameState = this.newGameState();
     }
+    this.gameState.markers = this.markers;
   }
 
   /**
@@ -1662,7 +1664,7 @@ export class Game {
       return false;
     }
 
-    // 현재 노드 삭제
+    // 현재 노드의 코멘트와 마커 정보 저장
     const parentNode = this.findNodeById(this.currentNode.parentId!);
     if (!parentNode) {
       console.log('Cannot delete: No parent node found');

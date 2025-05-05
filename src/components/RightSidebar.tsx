@@ -73,7 +73,7 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
         <textarea
           value={comment}
           onChange={(e) => handleCommentChange(e.target.value)}
-          className="w-full h-70 p-2 rounded bg-white resize-none"
+          className="w-full h-64 p-2 rounded bg-white resize-none"
           placeholder="메모를 입력하세요"
         />
       </div>

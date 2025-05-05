@@ -338,7 +338,7 @@ export class Game {
       const markerRegex = /(TR|SQ|CR|MA)\[([a-z]{2})\]/g;
       let markerMatch;
       while ((markerMatch = markerRegex.exec(content)) !== null) {
-        const [_, type, pos] = markerMatch;
+        const [, type, pos] = markerMatch;
         const x = pos.charCodeAt(0) - 97;
         const y = pos.charCodeAt(1) - 97;
         
@@ -360,7 +360,7 @@ export class Game {
         const lbMarkers = fullMatch.match(/\[([a-z]{2}):([^\]]+)\]/g);
         if (lbMarkers) {
           for (const marker of lbMarkers) {
-            const [_, pos, label] = marker.match(/\[([a-z]{2}):([^\]]+)\]/) || [];
+            const [, pos, label] = marker.match(/\[([a-z]{2}):([^\]]+)\]/) || [];
             if (pos) {
               const x = pos.charCodeAt(0) - 97;
               const y = pos.charCodeAt(1) - 97;

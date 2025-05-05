@@ -252,7 +252,7 @@ export default function Board({
               console.log('Calling onDeleteClick with:', { x, y });
               onDeleteClick(x, y);
             } else {
-              onIntersectionClick(x, y);
+            onIntersectionClick(x, y);
             }
           });
       }

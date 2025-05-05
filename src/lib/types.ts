@@ -86,7 +86,7 @@ export interface NodeData {
     label?: string;
     moveNum?: number;
   }[];
-  [key: string]: any; // 동적 키를 허용하기 위한 인덱스 시그니처 추가
+  [key: string]: unknown; // any를 unknown으로 변경
 }
 
 export interface GameNode {

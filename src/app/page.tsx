@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import LandingPage from '@/components/LandingPage';
 import GameBoard from '@/components/GameBoard';
-import NavBar from '@/components/NavBar';
+// import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import useGame from '@/hooks/useGame';
 

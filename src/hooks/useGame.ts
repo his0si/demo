@@ -218,6 +218,14 @@ export default function useGame() {
     setDeletePosition(null);
   }, []);
 
+  // 코멘트 업데이트 함수
+  const updateComment = useCallback((newComment: string) => {
+    setComment(newComment);
+    if (gameRef.current) {
+      gameRef.current.updateComment(newComment);
+    }
+  }, []);
+
   return {
     game,
     isGameStarted,
@@ -245,6 +253,7 @@ export default function useGame() {
     confirmDelete,
     cancelDelete,
     startGame,
-    loadSGF
+    loadSGF,
+    setComment: updateComment
   };
 }

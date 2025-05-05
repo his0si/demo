@@ -136,8 +136,15 @@ export default function GameBoard() {
               onSave={() => {
                 const sgf = gameRef.current?.saveSGF();
                 if (sgf) {
+                  const now = new Date();
+                  const year = String(now.getFullYear()).slice(-2);
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
                   const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, 'game.sgf');
+                  FileSaver.saveAs(blob, fileName);
                 }
               }}
               onLoad={importSGF}
@@ -171,8 +178,15 @@ export default function GameBoard() {
               onSave={() => {
                 const sgf = gameRef.current?.saveSGF();
                 if (sgf) {
+                  const now = new Date();
+                  const year = String(now.getFullYear()).slice(-2);
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
                   const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, 'game.sgf');
+                  FileSaver.saveAs(blob, fileName);
                 }
               }}
               onLoad={importSGF}
@@ -194,8 +208,15 @@ export default function GameBoard() {
               onSave={() => {
                 const sgf = gameRef.current?.saveSGF();
                 if (sgf) {
+                  const now = new Date();
+                  const year = String(now.getFullYear()).slice(-2);
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
                   const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, 'game.sgf');
+                  FileSaver.saveAs(blob, fileName);
                 }
               }}
               onLoad={importSGF}

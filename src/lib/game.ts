@@ -277,8 +277,8 @@ export class Game {
       const header = headerMatch[1];
       // 보드 크기 파싱
       const sizeMatch = header.match(/SZ\[(\d+)\]/);
-      if (sizeMatch) {
-        const size = parseInt(sizeMatch[1]);
+    if (sizeMatch) {
+      const size = parseInt(sizeMatch[1]);
         this.xLines = size;
         this.yLines = size;
         this.intersections = Game.initIntersections(size, size);
@@ -1410,10 +1410,10 @@ export class Game {
       const nextNode = this.currentNode.children[0];
       const nextMove = nextNode.data.move;
       if (nextMove && nextMove.x >= 0 && nextMove.y >= 0) {
-        return {
+    return {
           current,
           next: this.intersections[nextMove.x][nextMove.y]
-        };
+    };
       }
     }
 

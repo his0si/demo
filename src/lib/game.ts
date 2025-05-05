@@ -946,7 +946,8 @@ export class Game {
 
     // 현재 노드의 코멘트와 마커 정보 저장
     if (this.currentNode) {
-      if (this.gameState?.comment) {
+      // gameState가 존재하는 경우에만 코멘트 저장
+      if (this.gameState) {
         this.currentNode.data.comment = this.gameState.comment;
       }
       if (this.markers.length > 0) {
@@ -997,13 +998,10 @@ export class Game {
       }
 
       // 코멘트 복원
-      if (node.data.comment) {
-        if (!this.gameState) {
-          this.gameState = this.newGameState(node.data.comment);
-        } else {
-          this.gameState.comment = node.data.comment;
-        }
-        console.log('Restored comment:', node.data.comment); // 디버깅용 로그 추가
+      if (!this.gameState) {
+        this.gameState = this.newGameState(node.data.comment || '');
+      } else {
+        this.gameState.comment = node.data.comment || '';
       }
     }
 

@@ -5,21 +5,29 @@ import useGame from '../hooks/useGame';
 const GameView: React.FC = () => {
   const {
     boardState,
-    lastMoveMarkers,
     makeMove,
-    handleLastMoveClick,
     isGameEnded,
+    showDeleteConfirm,
+    deletePosition,
+    handleDeleteClick,
+    confirmDelete,
+    cancelDelete,
   } = useGame();
+
+  console.log('handleDeleteClick:', handleDeleteClick); // 디버깅을 위한 로그 추가
 
   return (
     <div>
       <Board
         size={19}
         boardState={boardState || []}
-        lastMoveMarkers={lastMoveMarkers}
         isGameEnded={isGameEnded}
         onIntersectionClick={makeMove}
-        onLastMoveClick={handleLastMoveClick}
+        showDeleteConfirm={showDeleteConfirm}
+        deletePosition={deletePosition}
+        onDeleteClick={handleDeleteClick}
+        onConfirmDelete={confirmDelete}
+        onCancelDelete={cancelDelete}
       />
     </div>
   );

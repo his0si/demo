@@ -31,6 +31,7 @@ export default function GameBoard() {
     game,
     comment,
     setComment,
+    handleDeleteClick,
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
@@ -150,6 +151,11 @@ export default function GameBoard() {
               isGameEnded={isGameEnded}
               onIntersectionClick={handleIntersectionClick}
               markers={game?.getGameState()?.markers ?? []}
+              showDeleteConfirm={false}
+              deletePosition={null}
+              onDeleteClick={handleDeleteClick}
+              onConfirmDelete={() => {}}
+              onCancelDelete={() => {}}
             />
 
             <GameControls

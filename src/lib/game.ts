@@ -1600,4 +1600,98 @@ export class Game {
   public getCurrentNode(): GameNode | null {
     return this.currentNode;
   }
+
+  /**
+   * 현재 노드 삭제
+   * 현재 노드와 그 자식들을 모두 삭제하고, 이전 노드로 이동
+   */
+  public deleteCurrentNode(): boolean {
+    if (!this.currentNode || this.currentNode.id === 'root') return false;
+
+    const parentNode = this.findNodeById(this.currentNode.parentId!);
+    if (!parentNode) return false;
+
+    // 1. 현재 노드의 모든 자식 노드들을 Map에서 제거
+    const removeNodeAndChildren = (node: GameNode) => {
+      this.nodeMap.delete(node.id);
+      for (const child of node.children) {
+        removeNodeAndChildren(child);
+      }
+    };
+    removeNodeAndChildren(this.currentNode);
+
+    // 2. 부모 노드의 자식 목록에서 현재 노드 제거
+    const childIndex = parentNode.children.findIndex(child => child.id === this.currentNode.id);
+    if (childIndex !== -1) {
+      parentNode.children.splice(childIndex, 1);
+    }
+
+    // 3. 부모 노드로 이동
+    this.navigateToNode(parentNode.id);
+
+    // 4. 게임 상태 업데이트
+    this.notifyStateChange();
+    return true;
+  }
+
+  /**
+   * 특정 위치의 돌 삭제
+   * 해당 위치의 돌이 현재 노드의 수인 경우에만 삭제 가능
+   */
+  public deleteStone(x: number, y: number): boolean {
+    console.log('Deleting stone at:', { x, y });
+    if (!this.intersections[x] || !this.intersections[x][y]) {
+      console.log('Invalid position:', { x, y });
+      return false;
+    }
+
+    if (this.intersections[x][y].stone === Stone.None) {
+      console.log('No stone at position:', { x, y });
+      return false;
+    }
+
+    // 현재 노드의 수인지 확인
+    if (!this.currentNode || this.currentNode.id === 'root') {
+      console.log('Cannot delete: No current node or root node');
+      return false;
+    }
+
+    const currentMove = this.currentNode.data.move;
+    if (!currentMove || currentMove.x !== x || currentMove.y !== y) {
+      console.log('Cannot delete: Not the current move');
+      return false;
+    }
+
+    // 현재 노드 삭제
+    const parentNode = this.findNodeById(this.currentNode.parentId!);
+    if (!parentNode) {
+      console.log('Cannot delete: No parent node found');
+      return false;
+    }
+
+    // 1. 현재 노드의 모든 자식 노드들을 Map에서 제거
+    const removeNodeAndChildren = (node: GameNode) => {
+      this.nodeMap.delete(node.id);
+      for (const child of node.children) {
+        removeNodeAndChildren(child);
+      }
+    };
+    removeNodeAndChildren(this.currentNode);
+
+    // 2. 부모 노드의 자식 목록에서 현재 노드 제거
+    const childIndex = parentNode.children.findIndex(child => child.id === this.currentNode.id);
+    if (childIndex !== -1) {
+      parentNode.children.splice(childIndex, 1);
+    }
+
+    // 3. 부모 노드로 이동
+    this.navigateToNode(parentNode.id);
+
+    // 4. 게임 상태 업데이트
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback();
+    }
+
+    return true;
+  }
 }

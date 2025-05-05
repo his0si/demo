@@ -11,6 +11,11 @@ interface BoardProps {
   isGameEnded: boolean;
   onIntersectionClick: (x: number, y: number) => void;
   markers?: { x: number; y: number; type: string; label?: string }[];
+  showDeleteConfirm: boolean;
+  deletePosition: { x: number; y: number } | null;
+  onDeleteClick?: (x: number, y: number) => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
 }
 
 export default function Board({ 
@@ -19,7 +24,12 @@ export default function Board({
   lastMoveMarkers, 
   isGameEnded,
   onIntersectionClick,
-  markers 
+  markers = [],
+  showDeleteConfirm,
+  deletePosition,
+  onDeleteClick = () => {},
+  onConfirmDelete,
+  onCancelDelete
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const width = 500;
@@ -230,9 +240,66 @@ export default function Board({
           .attr('data-y', y)
           .on('click', () => {
             console.log('[Board] Overlay clicked at:', { x, y });
-            onIntersectionClick(x, y);
+            if (showDeleteConfirm && deletePosition && deletePosition.x === x && deletePosition.y === y) {
+              onConfirmDelete();
+            } else if (boardState[x] && boardState[x][y] && boardState[x][y].stone !== StoneEnum.None) {
+              // 돌이 있는 경우 삭제 확인 UI 표시
+              console.log('Calling onDeleteClick with:', { x, y });
+              onDeleteClick(x, y);
+            } else {
+              // 빈 칸인 경우 수 두기
+              onIntersectionClick(x, y);
+            }
           });
       }
+    }
+    
+    // 삭제 확인 UI
+    if (showDeleteConfirm && deletePosition) {
+      const { x, y } = deletePosition;
+      const cx = stoneRadius + x * (width / size);
+      const cy = stoneRadius + y * (height / size);
+
+      // 삭제 확인 배경
+      svg.append('rect')
+        .attr('x', cx - stoneRadius * 2)
+        .attr('y', cy - stoneRadius * 2)
+        .attr('width', stoneRadius * 4)
+        .attr('height', stoneRadius * 4)
+        .attr('fill', 'rgba(255, 0, 0, 0.2)')
+        .attr('rx', 5)
+        .attr('ry', 5);
+
+      // 삭제 확인 텍스트
+      svg.append('text')
+        .attr('x', cx)
+        .attr('y', cy)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', 'red')
+        .attr('font-weight', 'bold')
+        .text('삭제?');
+
+      // 취소 버튼
+      svg.append('rect')
+        .attr('x', cx - stoneRadius * 1.5)
+        .attr('y', cy + stoneRadius)
+        .attr('width', stoneRadius * 3)
+        .attr('height', stoneRadius)
+        .attr('fill', 'white')
+        .attr('stroke', 'red')
+        .attr('rx', 3)
+        .attr('ry', 3)
+        .on('click', onCancelDelete);
+
+      svg.append('text')
+        .attr('x', cx)
+        .attr('y', cy + stoneRadius * 1.5)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', 'red')
+        .text('취소')
+        .on('click', onCancelDelete);
     }
     
     // 마지막 수 표시
@@ -267,7 +334,7 @@ export default function Board({
       // (간소화 버전에서는 생략)
     }
     
-  }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, onIntersectionClick, markers]);
+  }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete]);
   
   return (
     <div className="w-full flex justify-center">

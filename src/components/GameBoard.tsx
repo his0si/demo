@@ -100,6 +100,15 @@ export default function GameBoard() {
     [isGameEnded, makeMove, claimTerritory, currentTool, game]
   );
 
+  const handleMarkerClick = useCallback(
+    (x: number, y: number) => {
+      if (currentTool !== 'move') {
+        handleIntersectionClick(x, y);
+      }
+    },
+    [currentTool, handleIntersectionClick]
+  );
+
   if (!boardState) {
     return (
       <div className="text-center p-8">
@@ -163,6 +172,8 @@ export default function GameBoard() {
               onDeleteClick={handleDeleteClick}
               onConfirmDelete={() => {}}
               onCancelDelete={() => {}}
+              isMarkerMode={currentTool !== 'move'}
+              onMarkerClick={handleMarkerClick}
             />
 
             <GameControls

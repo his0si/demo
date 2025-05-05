@@ -16,6 +16,8 @@ interface BoardProps {
   onDeleteClick?: (x: number, y: number) => void;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
+  isMarkerMode?: boolean;
+  onMarkerClick?: (x: number, y: number) => void;
 }
 
 export default function Board({ 
@@ -29,7 +31,9 @@ export default function Board({
   deletePosition,
   onDeleteClick = () => {},
   onConfirmDelete,
-  onCancelDelete
+  onCancelDelete,
+  isMarkerMode = false,
+  onMarkerClick = () => {}
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const width = 500;
@@ -242,12 +246,12 @@ export default function Board({
             console.log('[Board] Overlay clicked at:', { x, y });
             if (showDeleteConfirm && deletePosition && deletePosition.x === x && deletePosition.y === y) {
               onConfirmDelete();
+            } else if (isMarkerMode) {
+              onMarkerClick(x, y);
             } else if (boardState[x] && boardState[x][y] && boardState[x][y].stone !== StoneEnum.None) {
-              // 돌이 있는 경우 삭제 확인 UI 표시
               console.log('Calling onDeleteClick with:', { x, y });
               onDeleteClick(x, y);
             } else {
-              // 빈 칸인 경우 수 두기
               onIntersectionClick(x, y);
             }
           });
@@ -313,7 +317,8 @@ export default function Board({
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-current')
         .attr('fill', strokeColor)
-        .attr('fill-opacity', 0.5);
+        .attr('fill-opacity', 0.5)
+        .attr('pointer-events', 'none');
     }
 
     if (lastMoveMarkers?.next) {
@@ -326,7 +331,8 @@ export default function Board({
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-next')
         .attr('fill', strokeColor)
-        .attr('fill-opacity', 0.9);
+        .attr('fill-opacity', 0.9)
+        .attr('pointer-events', 'none');
     }
     
     // 게임이 끝났을 때 영역 표시
@@ -334,7 +340,7 @@ export default function Board({
       // (간소화 버전에서는 생략)
     }
     
-  }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete]);
+  }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete, isMarkerMode, onMarkerClick]);
   
   return (
     <div className="w-full flex justify-center">

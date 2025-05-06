@@ -498,16 +498,12 @@ export class Game {
     // 메인 패스 설정
     this.updateMainPath();
     
-    // 현재 노드를 마지막 노드로 설정
-    let lastNode = rootNode;
-    while (lastNode.children.length > 0) {
-      lastNode = lastNode.children[0];
-    }
-    this.currentNode = lastNode;
-    this.gameTree.currentNodeId = lastNode.id;
+    // 루트 노드로 이동
+    this.currentNode = rootNode;
+    this.gameTree.currentNodeId = rootNode.id;
     
-    // navigateToNode를 사용하여 게임트리 상태 즉시 업데이트
-    this.navigateToNode(lastNode.id);
+    // 루트 노드의 상태로 복원
+    this.restoreGameState(rootNode);
     
     return true;
   }

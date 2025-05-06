@@ -978,8 +978,50 @@ export class Game {
     for (const node of path) {
       const move = node.data.move;
       if (move && move.x >= 0 && move.y >= 0) {
-        // 돌 놓기
+        // 임시로 돌 놓기
         this.intersections[move.x][move.y].stone = move.color;
+
+        // 상대방 돌 잡기
+        const capturedNeighbors = this.getCapturedNeighbors(move.x, move.y);
+        let legalMove = capturedNeighbors.length > 0;
+        
+        // 잡힌 돌이 없다면, 방금 놓은 돌이 잡히는지 확인
+        if (!legalMove) {
+          const selfCaptured = this.getCapturedGroup(this.intersections[move.x][move.y]);
+          legalMove = selfCaptured.length === 0;
+        }
+        
+        // 유효한 수가 아니면 돌을 제거하고 종료
+        if (!legalMove) {
+          this.intersections[move.x][move.y].stone = Stone.None;
+          continue;
+        }
+        
+        // 상대방 돌 제거 및 점수 계산
+        let numCaptured = 0;
+        for (const group of capturedNeighbors) {
+          for (const stone of group) {
+            // 명시적으로 돌을 제거
+            this.intersections[stone.xPos][stone.yPos].stone = Stone.None;
+            numCaptured++;
+          }
+        }
+        
+        // 점수 업데이트
+        if (numCaptured > 0) {
+          if (move.color === Stone.Black) {
+            this.blackScore += numCaptured;
+          } else {
+            this.whiteScore += numCaptured;
+          }
+        }
+
+        // 현재 상태 저장
+        node.data.boardState = this.copyIntersections();
+        node.data.blackScore = this.blackScore;
+        node.data.whiteScore = this.whiteScore;
+
+        // 마지막 수와 턴 업데이트
         this.lastMove = this.intersections[move.x][move.y];
         this.turn = this.getOtherPlayer(move.color);
       }
@@ -1004,18 +1046,6 @@ export class Game {
     this.gameState.markers = this.markers;
     this.gameState.blackScore = this.blackScore;
     this.gameState.whiteScore = this.whiteScore;
-
-    // 5. 마지막 노드의 상태로 복원
-    if (targetNode.data.boardState) {
-      const boardState = targetNode.data.boardState as Intersection[][];
-      for (let x = 0; x < this.xLines; x++) {
-        for (let y = 0; y < this.yLines; y++) {
-          this.intersections[x][y].stone = boardState[x][y].stone;
-        }
-      }
-      this.blackScore = targetNode.data.blackScore as number;
-      this.whiteScore = targetNode.data.whiteScore as number;
-    }
   }
 
   /**

@@ -334,22 +334,34 @@ export class Game {
 
       const markers: { x: number; y: number; type: string; label?: string }[] = [];
 
-      // 일반 마커 파싱 (LB 제외)
-      const markerRegex = /(TR|SQ|CR|MA)\[([a-z]{2})\]/g;
-      let markerMatch;
-      while ((markerMatch = markerRegex.exec(content)) !== null) {
-        const [, type, pos] = markerMatch;
-        const x = pos.charCodeAt(0) - 97;
-        const y = pos.charCodeAt(1) - 97;
-        
-        const markerType = {
-          TR: 'triangle',
-          SQ: 'square',
-          CR: 'circle',
-          MA: 'cross'
-        }[type] || type.toLowerCase();
+      // 마커 파싱 개선
+      const markerTypes = {
+        TR: 'triangle',
+        SQ: 'square',
+        CR: 'circle',
+        MA: 'cross',
+        LB: 'letter'
+      };
 
-        markers.push({ x, y, type: markerType });
+      // 각 마커 타입별로 파싱
+      for (const [sgfType, markerType] of Object.entries(markerTypes)) {
+        // 마커 타입과 모든 좌표를 찾는 정규식
+        const markerRegex = new RegExp(`${sgfType}((?:\\[[a-z]{2}\\])+)`, 'g');
+        let markerMatch;
+        
+        while ((markerMatch = markerRegex.exec(content)) !== null) {
+          // 모든 좌표를 찾는 정규식
+          const coordRegex = /\[([a-z]{2})\]/g;
+          let coordMatch;
+          const fullMatch = markerMatch[1];
+          
+          while ((coordMatch = coordRegex.exec(fullMatch)) !== null) {
+            const coord = coordMatch[1];
+            const x = coord.charCodeAt(0) - 97;
+            const y = coord.charCodeAt(1) - 97;
+            markers.push({ x, y, type: markerType });
+          }
+        }
       }
 
       // LB 마커 파싱 (라벨 포함)
@@ -366,29 +378,6 @@ export class Game {
               const y = pos.charCodeAt(1) - 97;
               markers.push({ x, y, type: 'letter', label });
             }
-          }
-        }
-      }
-
-      // 다중 마커 파싱 (LB 제외)
-      const multiMarkerRegex = /(TR|SQ|CR|MA)\[([a-z]{2})\](?:\[([a-z]{2})\])*/g;
-      let multiMatch;
-      while ((multiMatch = multiMarkerRegex.exec(content)) !== null) {
-        const type = multiMatch[1];
-        const markerType = {
-          TR: 'triangle',
-          SQ: 'square',
-          CR: 'circle',
-          MA: 'cross'
-        }[type] || type.toLowerCase();
-
-        // 첫 번째 마커는 이미 처리되었으므로 건너뜀
-        for (let i = 3; i < multiMatch.length; i++) {
-          if (multiMatch[i]) {
-            const pos = multiMatch[i];
-            const x = pos.charCodeAt(0) - 97;
-            const y = pos.charCodeAt(1) - 97;
-            markers.push({ x, y, type: markerType });
           }
         }
       }

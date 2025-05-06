@@ -162,3 +162,8 @@ export interface MatrixDictParams {
   currentNodeId: string;
   onNodeClick: (nodeId: string) => void;  // nodeId 매개변수 추가
 }
+
+export interface PatternDescription {
+  description: string;
+  url: string;
+}

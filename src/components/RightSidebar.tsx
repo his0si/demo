@@ -15,7 +15,7 @@ export interface GameRef {
 interface RightSidebarProps {
   comment: string;
   setComment: (comment: string) => void;
-  gameRef: React.RefObject<Game | null>;
+  gameRef: React.RefObject<Game>;
   gameTree?: GameTree;
 }
 
@@ -27,6 +27,8 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
       gameRef.current.updateComment(value);
     }
   };
+
+  const currentPattern = gameRef.current?.getCurrentPattern();
 
   return (
     <div className="w-64 border-l border-gray-200 bg-gray-100 h-screen flex flex-col">
@@ -62,7 +64,23 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
         <div className="p-4">
           <h3 className="text-md font-semibold mb-1">Boardmatcher</h3>
           <div className="bg-white rounded p-2 shadow-inner overflow-auto">
-            Boardmatcher 기능
+            {currentPattern ? (
+              <div className="text-sm">
+                <div className="font-medium text-gray-800">{currentPattern.description}</div>
+                <a
+                  href={currentPattern.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700 text-xs mt-1 block"
+                >
+                  자세히 보기
+                </a>
+              </div>
+            ) : (
+              <div className="text-gray-500 text-sm">
+                패턴이 인식되지 않았습니다
+              </div>
+            )}
           </div>
         </div>
       </div>

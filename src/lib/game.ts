@@ -541,7 +541,10 @@ export class Game {
       data: {
         move: { x, y, color },
         markers: [...markers],
-        comment
+        comment,
+        boardState: this.copyIntersections(),
+        blackScore: this.blackScore,
+        whiteScore: this.whiteScore
       }
     };
     
@@ -873,7 +876,10 @@ export class Game {
       data: {
         move: { x: xPos, y: yPos, color: this.turn },
         comment: '',
-        markers: []
+        markers: [],
+        boardState: this.copyIntersections(),
+        blackScore: this.blackScore,
+        whiteScore: this.whiteScore
       }
     };
 
@@ -987,6 +993,7 @@ export class Game {
     for (const node of path) {
       const move = node.data.move;
       if (move && move.x >= 0 && move.y >= 0) {
+        // 돌 놓기
         this.intersections[move.x][move.y].stone = move.color;
         this.lastMove = this.intersections[move.x][move.y];
         this.turn = this.getOtherPlayer(move.color);
@@ -1010,6 +1017,20 @@ export class Game {
       this.gameState = this.newGameState();
     }
     this.gameState.markers = this.markers;
+    this.gameState.blackScore = this.blackScore;
+    this.gameState.whiteScore = this.whiteScore;
+
+    // 5. 마지막 노드의 상태로 복원
+    if (targetNode.data.boardState) {
+      const boardState = targetNode.data.boardState as Intersection[][];
+      for (let x = 0; x < this.xLines; x++) {
+        for (let y = 0; y < this.yLines; y++) {
+          this.intersections[x][y].stone = boardState[x][y].stone;
+        }
+      }
+      this.blackScore = targetNode.data.blackScore as number;
+      this.whiteScore = targetNode.data.whiteScore as number;
+    }
   }
 
   /**
@@ -1626,11 +1647,19 @@ export class Game {
       parentNode.children.splice(childIndex, 1);
     }
 
-    // 3. 부모 노드로 이동
-    this.navigateToNode(parentNode.id);
+    // 3. 부모 노드로 이동하고 게임 상태 복원
+    this.currentNode = parentNode;
+    this.gameTree.currentNodeId = parentNode.id;
+    this.restoreGameState(parentNode);
 
-    // 4. 게임 상태 업데이트
-    this.notifyStateChange();
+    // 4. 메인 경로 업데이트
+    this.updateMainPath();
+
+    // 5. 게임 상태 업데이트
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback();
+    }
+
     return true;
   }
 
@@ -1684,10 +1713,15 @@ export class Game {
       parentNode.children.splice(childIndex, 1);
     }
 
-    // 3. 부모 노드로 이동
-    this.navigateToNode(parentNode.id);
+    // 3. 부모 노드로 이동하고 게임 상태 복원
+    this.currentNode = parentNode;
+    this.gameTree.currentNodeId = parentNode.id;
+    this.restoreGameState(parentNode);
 
-    // 4. 게임 상태 업데이트
+    // 4. 메인 경로 업데이트
+    this.updateMainPath();
+
+    // 5. 게임 상태 업데이트
     if (this.stateChangeCallback) {
       this.stateChangeCallback();
     }

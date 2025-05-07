@@ -3,9 +3,17 @@
 import { signIn } from "next-auth/react";
 
 export default function NaverLoginButton() {
+  const handleNaverLogin = async () => {
+    try {
+      await signIn("naver", { callbackUrl: "/" });
+    } catch (error) {
+      console.error("Naver login error:", error);
+    }
+  };
+
   return (
     <button
-      onClick={() => signIn("naver", { callbackUrl: "/" })}
+      onClick={handleNaverLogin}
       className="flex items-center justify-center w-full px-4 py-3 text-white bg-[#03C75A] rounded-md hover:bg-[#04bd48] transition-colors group"
     >
       <div className="flex items-center">

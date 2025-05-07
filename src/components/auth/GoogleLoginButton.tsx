@@ -3,9 +3,17 @@
 import { signIn } from "next-auth/react";
 
 export default function GoogleLoginButton() {
+  const handleGoogleLogin = async () => {
+    try {
+      await signIn("google", { callbackUrl: "/" });
+    } catch (error) {
+      console.error("Google login error:", error);
+    }
+  };
+
   return (
     <button
-      onClick={() => signIn("google", { callbackUrl: "/" })}
+      onClick={handleGoogleLogin}
       className="flex items-center justify-center w-full px-4 py-3 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-center">

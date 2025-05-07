@@ -160,30 +160,39 @@ function getCapturedGroups(signMap: number[][], sign: number): { x: number; y: n
 export async function recognizePattern(signMap: number[][], sign: number, x: number, y: number): Promise<PatternDescription | null> {
   try {
     console.log('패턴 인식 시작:', { x, y, sign });
-    console.log('입력된 바둑판 상태:', signMap);
-
-    // 1이 흑, -1이 백을 의미하므로 변환
-    const board = signMap.map(row => 
+    
+    // boardmatcher는 [y, x] 순서로 좌표를 받음
+    const moveCoord: [number, number] = [y, x];
+    
+    // 바둑판 상태 변환 (1→1, 2→-1)
+    // signMap을 전치(transpose)하여 [x][y]를 [y][x]로 변환
+    const transposedBoard = signMap[0].map((_, colIndex) =>
+      signMap.map(row => row[colIndex])
+    );
+    
+    const board = transposedBoard.map(row => 
       row.map(cell => {
         switch (cell) {
-          case 1: return 1;  // 흑
-          case 2: return -1; // 백
-          default: return 0; // 빈 곳
+          case 1: return 1;   // 흑
+          case 2: return -1;  // 백
+          default: return 0;  // 빈 곳
         }
       })
     );
 
-    console.log('변환된 바둑판 상태:', board);
-
-    // 현재 수의 색상 변환
+    // sign도 동일하게 변환
     const color = sign === 1 ? 1 : -1;
-    console.log('현재 수의 색상:', color);
+
+    console.log('원본 바둑판:', signMap);
+    console.log('변환된 바둑판:', board);
+    console.log('변환된 좌표:', moveCoord);
+    console.log('변환된 색상:', color);
 
     // 패턴 찾기
     const patternMatch = boardmatcher.findPatternInMove(
       board,
       color,
-      [x, y]
+      moveCoord
     );
 
     console.log('패턴 매칭 결과:', patternMatch);
@@ -199,14 +208,12 @@ export async function recognizePattern(signMap: number[][], sign: number, x: num
 
     // 패턴 설명 생성
     const description = getPatternDescription(pattern.name);
-    // boardmatcher가 제공하는 URL 사용
-    const url = pattern.url;
-
-    console.log('최종 패턴 정보:', { description, url });
+    
+    console.log('최종 패턴 정보:', { description, url: pattern.url });
 
     return {
       description,
-      url
+      url: pattern.url
     };
   } catch (error) {
     console.error('패턴 인식 중 오류 발생:', error);
@@ -277,4 +284,4 @@ function getPatternUrl(patternName: string): string {
   };
 
   return baseUrl + (urlMap[patternName] || patternName);
-} 
+}

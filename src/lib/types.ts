@@ -175,3 +175,13 @@ export interface Pattern {
   type: string;
   url: string;
 }
+
+declare module '@sabaki/boardmatcher' {
+  interface Pattern {
+    name: string;
+    url: string;
+    type: string;
+    anchors: number[][];
+    vertices: number[][];
+  }
+}

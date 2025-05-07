@@ -2,6 +2,7 @@ declare module '@sabaki/boardmatcher' {
   interface Pattern {
     name: string;
     priority: number;
+    url: string;
   }
 
   interface PatternMatch {

@@ -1,4 +1,5 @@
 import { Stone, PatternDescription } from './types';
+import boardmatcher from '@sabaki/boardmatcher';
 
 // 패턴 인식 함수들
 function isPass(signMap: number[][], sign: number, x: number, y: number): boolean {
@@ -156,62 +157,124 @@ function getCapturedGroups(signMap: number[][], sign: number): { x: number; y: n
 }
 
 // 패턴 인식 함수
-export function recognizePattern(signMap: number[][], sign: number, x: number, y: number): PatternDescription | null {
-  if (isPass(signMap, sign, x, y)) {
+export async function recognizePattern(signMap: number[][], sign: number, x: number, y: number): Promise<PatternDescription | null> {
+  try {
+    console.log('패턴 인식 시작:', { x, y, sign });
+    console.log('입력된 바둑판 상태:', signMap);
+
+    // 1이 흑, -1이 백을 의미하므로 변환
+    const board = signMap.map(row => 
+      row.map(cell => {
+        switch (cell) {
+          case 1: return 1;  // 흑
+          case 2: return -1; // 백
+          default: return 0; // 빈 곳
+        }
+      })
+    );
+
+    console.log('변환된 바둑판 상태:', board);
+
+    // 현재 수의 색상 변환
+    const color = sign === 1 ? 1 : -1;
+    console.log('현재 수의 색상:', color);
+
+    // 패턴 찾기
+    const patternMatch = boardmatcher.findPatternInMove(
+      board,
+      color,
+      [x, y]
+    );
+
+    console.log('패턴 매칭 결과:', patternMatch);
+
+    if (!patternMatch) {
+      console.log('패턴이 인식되지 않음');
+      return null;
+    }
+
+    const { pattern, match } = patternMatch;
+    console.log('인식된 패턴:', pattern);
+    console.log('매칭된 위치:', match);
+
+    // 패턴 설명 생성
+    const description = getPatternDescription(pattern.name);
+    // boardmatcher가 제공하는 URL 사용
+    const url = pattern.url;
+
+    console.log('최종 패턴 정보:', { description, url });
+
     return {
-      description: "패스",
-      url: "https://senseis.xmp.net/?Pass"
+      description,
+      url
     };
+  } catch (error) {
+    console.error('패턴 인식 중 오류 발생:', error);
+    return null;
   }
-  
-  if (isCapture(signMap, sign, x, y)) {
-    return {
-      description: "따내기",
-      url: "https://senseis.xmp.net/?Capture"
-    };
-  }
-  
-  if (isAtari(signMap, sign, x, y)) {
-    return {
-      description: "아타리",
-      url: "https://senseis.xmp.net/?Atari"
-    };
-  }
-  
-  if (isSuicide(signMap, sign, x, y)) {
-    return {
-      description: "자살",
-      url: "https://senseis.xmp.net/?Suicide"
-    };
-  }
-  
-  if (isFill(signMap, sign, x, y)) {
-    return {
-      description: "메우기",
-      url: "https://senseis.xmp.net/?Fill"
-    };
-  }
-  
-  if (isConnect(signMap, sign, x, y)) {
-    return {
-      description: "연결",
-      url: "https://senseis.xmp.net/?Connection"
-    };
-  }
-  
-  if (isTengen(signMap, sign, x, y)) {
-    return {
-      description: "천원",
-      url: "https://senseis.xmp.net/?Tengen"
-    };
-  }
-  
-  if (isStar(signMap, sign, x, y)) {
-    return {
-      description: "성",
-      url: "https://senseis.xmp.net/?StarPoint"
-    };
-  }
-  
-  return null;
+}
+
+// 패턴 설명 가져오기
+function getPatternDescription(patternName: string): string {
+  const descriptions: { [key: string]: string } = {
+    'hane': '한수',
+    'cut': '끊기',
+    'connect': '연결',
+    'tiger-mouth': '호랑이입',
+    'empty-triangle': '빈삼각',
+    'bamboo-joint': '대마목',
+    'knight-move': '날일자',
+    'large-knight-move': '큰날일자',
+    'diagonal': '대각선',
+    'one-point-jump': '한칸뛰기',
+    'two-point-jump': '두칸뛰기',
+    'shoulder-hit': '어깨짚기',
+    'attachment': '붙임',
+    'block': '막기',
+    'extend': '늘리기',
+    'push': '밀기',
+    'peep': '엿보기',
+    'wedge': '쐐기',
+    'cross-cut': '십자끊기',
+    'cross-connect': '십자연결',
+    'cross': '십자',
+    'star-point': '성',
+    'tengen': '천원',
+    'pass': '패스'
+  };
+
+  return descriptions[patternName] || patternName;
+}
+
+// 패턴 URL 가져오기
+function getPatternUrl(patternName: string): string {
+  const baseUrl = 'https://senseis.xmp.net/?';
+  const urlMap: { [key: string]: string } = {
+    'hane': 'Hane',
+    'cut': 'Cut',
+    'connect': 'Connection',
+    'tiger-mouth': 'TigerMouth',
+    'empty-triangle': 'EmptyTriangle',
+    'bamboo-joint': 'BambooJoint',
+    'knight-move': 'KnightMove',
+    'large-knight-move': 'LargeKnightMove',
+    'diagonal': 'Diagonal',
+    'one-point-jump': 'OnePointJump',
+    'two-point-jump': 'TwoPointJump',
+    'shoulder-hit': 'ShoulderHit',
+    'attachment': 'Attachment',
+    'block': 'Block',
+    'extend': 'Extend',
+    'push': 'Push',
+    'peep': 'Peep',
+    'wedge': 'Wedge',
+    'cross-cut': 'CrossCut',
+    'cross-connect': 'CrossConnect',
+    'cross': 'Cross',
+    'star-point': 'StarPoint',
+    'tengen': 'Tengen',
+    'pass': 'Pass'
+  };
+
+  return baseUrl + (urlMap[patternName] || patternName);
 } 

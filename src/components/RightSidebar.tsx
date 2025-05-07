@@ -1,6 +1,7 @@
 import { Game } from '@/lib/game';
 import GameTreeManager from '@/components/GameTree/GameTree';
-import { GameTree } from '@/lib/types';
+import { GameTree, PatternDescription } from '@/lib/types';
+import { useState, useEffect } from 'react';
 
 export interface GameState {
   comment: string;
@@ -20,6 +21,42 @@ interface RightSidebarProps {
 }
 
 export default function RightSidebar({ comment, setComment, gameRef, gameTree }: RightSidebarProps) {
+  const [currentPattern, setCurrentPattern] = useState<PatternDescription | null>(null);
+  const [game, setGame] = useState<Game | null>(null);
+
+  useEffect(() => {
+    setGame(gameRef.current);
+  }, [gameRef]);
+
+  useEffect(() => {
+    const updatePattern = async () => {
+      if (!game) return;
+      try {
+        const pattern = await game.getCurrentPattern();
+        setCurrentPattern(pattern);
+      } catch (error) {
+        console.error('패턴 인식 중 오류 발생:', error);
+        setCurrentPattern(null);
+      }
+    };
+    updatePattern();
+  }, [game]);
+
+  // 게임 상태가 변경될 때마다 패턴 업데이트
+  useEffect(() => {
+    if (!game) return;
+    const updatePattern = async () => {
+      try {
+        const pattern = await game.getCurrentPattern();
+        setCurrentPattern(pattern);
+      } catch (error) {
+        console.error('패턴 인식 중 오류 발생:', error);
+        setCurrentPattern(null);
+      }
+    };
+    updatePattern();
+  }, [game?.getLastMove()]);
+
   // 코멘트 변경 핸들러
   const handleCommentChange = (value: string) => {
     setComment(value);
@@ -27,8 +64,6 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
       gameRef.current.updateComment(value);
     }
   };
-
-  const currentPattern = gameRef.current?.getCurrentPattern();
 
   return (
     <div className="w-64 border-l border-gray-200 bg-gray-100 h-screen flex flex-col">

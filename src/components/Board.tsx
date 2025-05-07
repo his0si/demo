@@ -43,7 +43,7 @@ export default function Board({
   useEffect(() => {
     if (!svgRef.current || !boardState) return;
     
-    console.log('🔍 Markers received by Board:', markers);
+    // console.log('🔍 Markers received by Board:', markers);
     if (markers && markers.length > 0) {
       markers.forEach(m => {
         console.log(`🟢 Marker → x: ${m.x}, y: ${m.y}, type: ${m.type}, label: ${m.label}`);

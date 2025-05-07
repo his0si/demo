@@ -1746,7 +1746,8 @@ export class Game {
     return true;
   }
 
-  public getCurrentPattern(): PatternDescription | null {
+  // 현재 수의 패턴 인식
+  async getCurrentPattern(): Promise<PatternDescription | null> {
     if (!this.lastMove) return null;
     
     const signMap = this.intersections.map(row => 

@@ -167,3 +167,11 @@ export interface PatternDescription {
   description: string;
   url: string;
 }
+
+export interface Pattern {
+  name: string;
+  anchors: [number, number][];
+  vertices: [number, number][];
+  type: string;
+  url: string;
+}

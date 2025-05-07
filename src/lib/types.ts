@@ -162,3 +162,14 @@ export interface MatrixDictParams {
   currentNodeId: string;
   onNodeClick: (nodeId: string) => void;  // nodeId 매개변수 추가
 }
+
+export interface Position {
+  x: number;
+  y: number;
+}
+
+export interface LayoutResult {
+  positions: Map<string, Position>;
+  width: number;
+  height: number;
+}

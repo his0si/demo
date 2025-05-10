@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { motion } from "framer-motion";
@@ -10,7 +10,9 @@ import {
   DocumentIcon,
   CalendarIcon,
   FolderIcon,
-  StarIcon
+  StarIcon,
+  TrashIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 export interface SGFFile {
@@ -22,10 +24,96 @@ export interface SGFFile {
   thumbnail?: string;
 }
 
+interface DeleteModalProps {
+  file: SGFFile;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+// 삭제 확인 모달 컴포넌트 수정
+const DeleteModal: React.FC<DeleteModalProps> = ({ file, onConfirm, onCancel }) => {
+  // 즉시 실행되지 않고, 클릭 이벤트만 처리하는 래퍼 함수
+  const handleConfirmClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // 이벤트 버블링 방지
+    console.log('DeleteModal: 삭제 버튼 클릭');
+    onConfirm();
+  };
+
+  const handleCancelClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('DeleteModal: 취소 버튼 클릭');
+    onCancel();
+  };
+
+  // 모달 배경 클릭 시 취소 처리
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  // DeleteModal 컴포넌트 부분만 수정
+
+return (
+  <div 
+    className="fixed inset-0 z-50 flex items-center justify-center"
+    onClick={handleBackdropClick}
+    style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }} // 더 밝은 반투명 배경으로 설정
+  >
+    <div 
+      className="bg-white rounded-lg shadow-xl max-w-md w-full" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 모달 내용 부분은 그대로 유지 */}
+      <div className="p-5 border-b">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium text-gray-900">파일 삭제</h3>
+          <button 
+            onClick={handleCancelClick}
+            className="text-gray-400 hover:text-gray-500"
+            type="button"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+      <div className="p-5">
+        <p className="text-sm text-gray-500 mb-4">
+          <span className="font-semibold text-black">{file.name}</span> 파일을 삭제하시겠습니까?
+        </p>
+        <p className="text-sm text-red-400 mb-1">
+          이 작업은 되돌릴 수 없으며, 파일이 영구적으로 삭제됩니다.
+        </p>
+      </div>
+      <div className="p-4 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+        <button
+          onClick={handleCancelClick}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+          type="button"
+        >
+          취소
+        </button>
+        <button
+          onClick={handleConfirmClick}
+          className="px-4 py-2 text-sm font-medium text-white bg-red-400 border border-transparent rounded-md shadow-sm hover:bg-red-500"
+          type="button"
+        >
+          삭제
+        </button>
+      </div>
+    </div>
+  </div>
+);
+};
+
 export default function LeftSidebar({
   recentFiles,
   onFileClick,
   onToggleFavorite,
+  onDeleteFile,
   isCollapsed,
   onToggle,
   currentFileId,
@@ -33,12 +121,14 @@ export default function LeftSidebar({
   recentFiles: SGFFile[];
   onFileClick: (file: SGFFile) => void;
   onToggleFavorite?: (file: SGFFile) => void;
+  onDeleteFile?: (file: SGFFile) => void;
   isCollapsed: boolean;
   onToggle: () => void;
   currentFileId?: string;
 }) {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = React.useState<'recent' | 'favorite'>('recent');
+  const [fileToDelete, setFileToDelete] = useState<SGFFile | null>(null);
   
   // 즐겨찾기 목록
   const favoriteFiles = recentFiles.filter(file => file.favorite);
@@ -81,6 +171,36 @@ export default function LeftSidebar({
     }
     
     return formatDate(dateString);
+  };
+
+  // 삭제 처리 함수
+  const handleDeleteClick = (file: SGFFile, e: React.MouseEvent) => {
+    e.stopPropagation(); // 이벤트 전파 중지
+    console.log('파일 삭제 모달 표시:', file.name);
+    setFileToDelete(file);
+  };
+
+  const handleConfirmDelete = () => {
+    console.log('삭제 확인 클릭');
+    if (fileToDelete && onDeleteFile) {
+      try {
+        // 모달 먼저 닫기
+        setFileToDelete(null);
+        
+        // 약간의 지연 후 삭제 처리 (UI 업데이트를 위함)
+        setTimeout(() => {
+          onDeleteFile(fileToDelete);
+        }, 10);
+      } catch (error) {
+        console.error('삭제 처리 중 오류:', error);
+        alert('파일 삭제 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  const handleCancelDelete = () => {
+    console.log('삭제 취소 클릭');
+    setFileToDelete(null);
   };
 
   return (
@@ -191,31 +311,45 @@ export default function LeftSidebar({
                     {(activeTab === 'recent' ? recentFiles : favoriteFiles).map((file) => (
                       <li
                         key={file.id}
-                        className={`hover:bg-blue-50 transition-colors cursor-pointer ${currentFileId === file.id ? 'bg-blue-100' : ''}`}
+                        className={`hover:bg-blue-50 transition-colors ${currentFileId === file.id ? 'bg-blue-100' : ''}`}
                       >
                         <div className="p-3">
                           <div className="flex items-center mb-1.5">
                             <DocumentIcon className="w-6 h-6 text-gray-400 mr-3 flex-shrink-0" />
                             <div 
-                              className="flex-grow min-w-0"
+                              className="flex-grow min-w-0 cursor-pointer"
                               onClick={() => onFileClick(file)}
                             >
                               <div className="font-medium text-gray-800 truncate">{file.name}</div>
                             </div>
-                            {/* 즐겨찾기 토글 버튼 */}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (onToggleFavorite) {
-                                  onToggleFavorite(file);
-                                }
-                              }}
-                              className="p-1 hover:bg-gray-100 rounded-full"
-                            >
-                              <StarIcon 
-                                className={`w-5 h-5 ${file.favorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-400'}`} 
-                              />
-                            </button>
+
+                            {/* 액션 버튼 그룹 */}
+                            <div className="flex items-center space-x-1">
+                              {/* 삭제 버튼 */}
+                              <button 
+                                onClick={(e) => handleDeleteClick(file, e)}
+                                className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500"
+                                title="삭제"
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                              
+                              {/* 즐겨찾기 토글 버튼 */}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onToggleFavorite) {
+                                    onToggleFavorite(file);
+                                  }
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded-full"
+                                title={file.favorite ? "즐겨찾기 해제" : "즐겨찾기에 추가"}
+                              >
+                                <StarIcon 
+                                  className={`w-5 h-5 ${file.favorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-400'}`} 
+                                />
+                              </button>
+                            </div>
                           </div>
                           <div className="pl-9 flex items-center justify-between text-xs text-gray-500">
                             <div className="flex items-center">
@@ -241,6 +375,15 @@ export default function LeftSidebar({
               </div>
             </div>
           </div>
+
+          {/* 파일 삭제 확인 모달 */}
+          {fileToDelete && (
+            <DeleteModal 
+              file={fileToDelete}
+              onConfirm={handleConfirmDelete}
+              onCancel={handleCancelDelete}
+            />
+          )}
         </>
       )}
 

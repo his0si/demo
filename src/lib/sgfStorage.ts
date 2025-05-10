@@ -140,24 +140,55 @@ export const sgfStorage = {
     }
   },
 
-  // SGF 파일 삭제
-  deleteSGF: (fileId: string): void => {
-    if (typeof window === 'undefined') return;
+  // SGF 파일 삭제 - 개선된 버전
+  deleteSGF: (fileId: string): boolean => {
+    if (typeof window === 'undefined') return false;
     
     try {
+      console.log(`SGF 파일 삭제 시작: ID ${fileId}`);
+      
+      // 파일 존재 여부 확인
+      const fileContent = localStorage.getItem(`sgf-content-${fileId}`);
+      if (!fileContent) {
+        console.warn(`파일 내용이 존재하지 않음: ID ${fileId}`);
+      }
+      
       const files = sgfStorage.getAll();
+      const fileToDelete = files.find(file => file.id === fileId);
+      
+      if (!fileToDelete) {
+        console.warn(`삭제할 파일 정보를 찾을 수 없음: ID ${fileId}`);
+        return false;
+      }
+      
+      console.log(`삭제 대상 파일: ${fileToDelete.name} (ID: ${fileId})`);
+      
+      // 목록에서 파일 제거
       const updatedFiles = files.filter(file => file.id !== fileId);
       
+      // 업데이트된 목록 저장
       localStorage.setItem(SGF_STORAGE_KEY, JSON.stringify(updatedFiles));
+      
+      // 파일 내용 삭제
       localStorage.removeItem(`sgf-content-${fileId}`);
       
-      // 저장 이벤트를 강제로 발생시킴
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: SGF_STORAGE_KEY,
-        newValue: JSON.stringify(updatedFiles)
-      }));
+      console.log(`파일 삭제 완료: ID ${fileId}, 남은 파일 수: ${updatedFiles.length}`);
+      
+      // 저장 이벤트를 강제로 발생시킴 (같은 탭에서 감지하기 위함)
+      try {
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: SGF_STORAGE_KEY,
+          newValue: JSON.stringify(updatedFiles)
+        }));
+      } catch (e) {
+        console.warn('저장 이벤트 발생 중 오류:', e);
+        // 이벤트 발생 실패해도 계속 진행
+      }
+      
+      return true;
     } catch (error) {
       console.error('SGF 파일 삭제 중 오류 발생:', error);
+      return false;
     }
   }
 };

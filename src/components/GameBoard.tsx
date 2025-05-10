@@ -214,6 +214,31 @@ export default function GameBoard() {
     loadSgfFileList();
   }, [loadSgfFileList]);
 
+  // 파일 삭제 핸들러 추가
+  const handleDeleteFile = useCallback((file: SGFFile) => {
+    try {
+      console.log(`SGF 파일 삭제 시작: ${file.name} (ID: ${file.id})`);
+      
+      // 현재 선택된 파일을 삭제하는 경우
+      if (currentSGFFile && currentSGFFile.id === file.id) {
+        // 새 게임 시작
+        startGame();
+        setCurrentSGFFile(null);
+      }
+      
+      // 스토리지에서 파일 삭제
+      sgfStorage.deleteSGF(file.id);
+      
+      // 파일 목록 갱신
+      loadSgfFileList();
+      
+      console.log(`SGF 파일 삭제 완료: ${file.name}`);
+    } catch (error) {
+      console.error('SGF 파일 삭제 중 오류 발생:', error);
+      alert('파일 삭제 중 오류가 발생했습니다.');
+    }
+  }, [currentSGFFile, loadSgfFileList, startGame]);
+
   if (!boardState) {
     return (
       <div className="text-center p-8">
@@ -230,6 +255,7 @@ export default function GameBoard() {
           recentFiles={sgfFiles}
           onFileClick={handleLoadSGF}
           onToggleFavorite={handleToggleFavorite}
+          onDeleteFile={handleDeleteFile}
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
           currentFileId={currentSGFFile?.id}

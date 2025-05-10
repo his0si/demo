@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Game } from '@/lib/game';
 import { Stone, Intersection } from '@/lib/types';
+import { sgfStorage } from '@/lib/sgfStorage';
 
 export default function useGame() {
   const [comment, setComment] = useState('');
@@ -127,6 +128,7 @@ export default function useGame() {
 
   // SGF 불러오기
   const importSGF = useCallback(() => {
+    console.log('SGF 파일 불러오기 다이얼로그 실행');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.sgf';
@@ -137,10 +139,20 @@ export default function useGame() {
       const file = target.files?.[0];
       if (!file) return;
       
+      console.log(`선택된 SGF 파일: ${file.name}`);
       const reader = new FileReader();
       reader.onload = () => {
         const sgfContent = reader.result as string;
         loadSGF(sgfContent);
+        
+        // SGF 파일을 로컬 스토리지에도 저장
+        try {
+          const savedFile = sgfStorage.saveSGF(file.name, sgfContent);
+          console.log('SGF 파일이 저장되었습니다:', savedFile);
+          
+        } catch (error) {
+          console.error('SGF 저장 중 오류 발생:', error);
+        }
       };
       reader.readAsText(file);
     };

@@ -30,115 +30,29 @@ const sampleSGFFiles: SGFFile[] = [
     openedAt: '2025-05-08T10:30:00Z',
     createdAt: '2025-04-15T08:20:00Z',
     favorite: true,
-    thumbnail: '/images/sgf_thumbnails/alphago_1.png'
   },
-  { 
-    id: '2', 
-    name: '알파고 vs 이세돌 2국', 
-    openedAt: '2025-05-07T14:20:00Z',
-    createdAt: '2025-04-16T09:30:00Z',
-    thumbnail: '/images/sgf_thumbnails/alphago_2.png'
-  },
-  { 
-    id: '3', 
-    name: '신진서 vs 이야마 9단', 
-    openedAt: '2025-05-06T09:15:00Z',
-    createdAt: '2025-05-01T15:40:00Z',
-    favorite: true
-  },
-  { 
-    id: '4', 
-    name: '내 첫 대국', 
-    openedAt: '2025-05-05T17:45:00Z',
-    createdAt: '2025-05-02T11:25:00Z'
-  },
-  { 
-    id: '5', 
-    name: '바둑 강의 예제', 
-    openedAt: '2025-05-04T11:10:00Z',
-    createdAt: '2025-05-03T16:50:00Z'
-  },
-  { 
-    id: '6', 
-    name: '프로 기사의 정석 응용', 
-    openedAt: '2025-05-02T13:20:00Z',
-    createdAt: '2025-04-20T09:15:00Z'
-  },
-  { 
-    id: '7', 
-    name: '바둑 초보를 위한 가이드', 
-    openedAt: '2025-04-30T16:40:00Z',
-    createdAt: '2025-04-25T14:30:00Z'
-  },
-  { 
-    id: '8', 
-    name: '이창호 9단의 명국 해설', 
-    openedAt: '2025-04-28T09:30:00Z',
-    createdAt: '2025-04-10T13:45:00Z',
-    favorite: true
-  },
-  { 
-    id: '9', 
-    name: '박정환 9단 vs 커제 9단', 
-    openedAt: '2025-04-25T14:15:00Z',
-    createdAt: '2025-03-20T10:30:00Z'
-  },
-  { 
-    id: '10', 
-    name: '알파고 자가대국 연구', 
-    openedAt: '2025-04-22T11:40:00Z',
-    createdAt: '2025-03-15T09:20:00Z',
-    favorite: true
-  },
-  { 
-    id: '11', 
-    name: '바둑 정석 변화형 모음', 
-    openedAt: '2025-04-18T16:50:00Z',
-    createdAt: '2025-03-10T14:15:00Z'
-  },
-  { 
-    id: '12', 
-    name: '세계 바둑 챔피언십 결승전', 
-    openedAt: '2025-04-15T10:25:00Z',
-    createdAt: '2025-02-28T08:30:00Z'
-  },
-  { 
-    id: '13', 
-    name: '고전 명국 해설집', 
-    openedAt: '2025-04-10T13:20:00Z',
-    createdAt: '2025-02-20T11:10:00Z',
-    favorite: true
-  },
-  { 
-    id: '14', 
-    name: '인공지능과 인간의 바둑 차이점 분석', 
-    openedAt: '2025-04-05T09:40:00Z',
-    createdAt: '2025-02-15T16:30:00Z'
-  },
-  { 
-    id: '15', 
-    name: '바둑 포석 전략과 실전', 
-    openedAt: '2025-04-01T15:10:00Z',
-    createdAt: '2025-01-30T14:20:00Z'
-  }
 ];
 
 export default function LeftSidebar({
   recentFiles = sampleSGFFiles, // 임시 데이터로 기본값 설정
   onFileClick,
+  onToggleFavorite,
   isCollapsed,
   onToggle,
+  currentFileId,
 }: {
   recentFiles?: SGFFile[];
   onFileClick: (file: SGFFile) => void;
+  onToggleFavorite?: (file: SGFFile) => void;
   isCollapsed: boolean;
   onToggle: () => void;
+  currentFileId?: string;
 }) {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = React.useState<'recent' | 'favorite'>('recent');
 
-  // 강제로 샘플 파일을 사용하기
-  const filesToDisplay = recentFiles && recentFiles.length > 0 ? recentFiles : sampleSGFFiles;
+  // 강제로 샘플 파일을 사용하지 않고 실제 파일 목록 사용
+  const filesToDisplay = recentFiles && recentFiles.length > 0 ? recentFiles : [];
   
   // 즐겨찾기 목록
   const favoriteFiles = filesToDisplay.filter(file => file.favorite);
@@ -150,6 +64,37 @@ export default function LeftSidebar({
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // 사용 시간 상대적 표시 (예: "3일 전", "방금 전")
+  const getRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
+        if (diffMinutes === 0) {
+          return '방금 전';
+        }
+        return `${diffMinutes}분 전`;
+      }
+      return `${diffHours}시간 전`;
+    }
+    
+    if (diffDays < 7) {
+      return `${diffDays}일 전`;
+    }
+    
+    if (diffDays < 30) {
+      const diffWeeks = Math.floor(diffDays / 7);
+      return `${diffWeeks}주 전`;
+    }
+    
+    return formatDate(dateString);
   };
 
   return (
@@ -260,22 +205,40 @@ export default function LeftSidebar({
                     {(activeTab === 'recent' ? filesToDisplay : favoriteFiles).map((file) => (
                       <li
                         key={file.id}
-                        className="hover:bg-blue-50 transition-colors cursor-pointer"
-                        onClick={() => onFileClick(file)}
+                        className={`hover:bg-blue-50 transition-colors cursor-pointer ${currentFileId === file.id ? 'bg-blue-100' : ''}`}
                       >
                         <div className="p-3">
                           <div className="flex items-center mb-1.5">
                             <DocumentIcon className="w-6 h-6 text-gray-400 mr-3 flex-shrink-0" />
-                            <div className="flex-grow min-w-0">
+                            <div 
+                              className="flex-grow min-w-0"
+                              onClick={() => onFileClick(file)}
+                            >
                               <div className="font-medium text-gray-800 truncate">{file.name}</div>
                             </div>
-                            {file.favorite && (
-                              <StarIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                            )}
+                            {/* 즐겨찾기 토글 버튼 */}
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onToggleFavorite) {
+                                  onToggleFavorite(file);
+                                }
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded-full"
+                            >
+                              <StarIcon 
+                                className={`w-5 h-5 ${file.favorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-400'}`} 
+                              />
+                            </button>
                           </div>
-                          <div className="pl-9 flex items-center text-xs text-gray-500">
-                            <CalendarIcon className="w-3.5 h-3.5 mr-1 text-gray-400" />
-                            <span>등록일: {formatDate(file.createdAt)}</span>
+                          <div className="pl-9 flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center">
+                              <CalendarIcon className="w-3.5 h-3.5 mr-1 text-gray-400" />
+                              <span>등록일: {formatDate(file.createdAt)}</span>
+                            </div>
+                            <div className="text-gray-400">
+                              {getRelativeTime(file.openedAt)}
+                            </div>
                           </div>
                         </div>
                       </li>

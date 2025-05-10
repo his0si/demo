@@ -8,10 +8,14 @@ import useGame from '@/hooks/useGame';
 import RightSidebar from './RightSidebar';
 import LeftSidebar from './LeftSidebar';
 import NavBar from './NavBar';
+import { sgfStorage } from '@/lib/sgfStorage';
+import { SGFFile } from './LeftSidebar';
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [sgfFiles, setSgfFiles] = useState<SGFFile[]>([]);
+  const [currentSGFFile, setCurrentSGFFile] = useState<SGFFile | null>(null);
 
   const {
     isGameEnded,
@@ -32,9 +36,37 @@ export default function GameBoard() {
     comment,
     setComment,
     handleDeleteClick,
+    loadSGF
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
+
+  // SGF 파일 목록 로드 - 명시적으로 즉시 로드 후 상태 업데이트
+  const loadSgfFileList = useCallback(() => {
+    console.log('로컬 스토리지에서 SGF 파일 목록 로드 중...');
+    const files = sgfStorage.getAll();
+    console.log('로드된 SGF 파일:', files.length, '개');
+    setSgfFiles(files);
+  }, []);
+
+  // 컴포넌트 마운트 시 및 필요할 때 SGF 파일 목록 로드
+  useEffect(() => {
+    // 초기 로드
+    loadSgfFileList();
+    
+    // 로컬 스토리지 변경 감지
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'goggle-sgf-files') {
+        console.log('로컬 스토리지 변경 감지됨');
+        loadSgfFileList();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [loadSgfFileList]);
 
   useEffect(() => {
     if (!boardState) {
@@ -109,6 +141,79 @@ export default function GameBoard() {
     [currentTool, handleIntersectionClick]
   );
 
+  // SGF 파일 저장 함수
+  const handleSaveSGF = useCallback(() => {
+    if (!gameRef.current) return;
+
+    const sgf = gameRef.current.saveSGF();
+    if (sgf) {
+      try {
+        // 파일 이름 생성 (현재 날짜/시간 기반)
+        const now = new Date();
+        const year = String(now.getFullYear()).slice(-2);
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
+        
+        // 파일 저장 (브라우저 다운로드)
+        const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
+        FileSaver.saveAs(blob, fileName);
+        
+        // 로컬 저장소에도 저장
+        const savedFile = sgfStorage.saveSGF(fileName, sgf);
+        console.log('SGF 파일 저장됨:', fileName);
+        
+        // 파일 목록 상태 갱신 - 바로 갱신하는 방식 사용
+        loadSgfFileList();
+        setCurrentSGFFile(savedFile);
+        
+        alert(`SGF 파일이 저장되었습니다: ${fileName}`);
+      } catch (error) {
+        console.error('SGF 저장 중 오류 발생:', error);
+        alert('SGF 파일 저장 중 오류가 발생했습니다.');
+      }
+    }
+  }, [loadSgfFileList]);
+
+  // SGF 파일 불러오기 함수
+  const handleLoadSGF = useCallback((file: SGFFile) => {
+    try {
+      console.log(`SGF 파일 로드 시작: ${file.name} (ID: ${file.id})`);
+      // 파일 내용 가져오기
+      const sgfContent = sgfStorage.getSGFContent(file.id);
+      if (!sgfContent) {
+        alert('SGF 파일 내용을 불러올 수 없습니다.');
+        return;
+      }
+      
+      // 게임에 SGF 적용
+      loadSGF(sgfContent);
+      
+      // 열어본 시간 업데이트
+      sgfStorage.updateOpenedTime(file.id);
+      
+      // 현재 선택된 파일 설정
+      setCurrentSGFFile(file);
+      
+      // 사이드바 파일 목록 갱신 - 데이터 새로 불러오기
+      loadSgfFileList();
+      
+      console.log(`SGF 파일을 불러왔습니다: ${file.name}`);
+    } catch (error) {
+      console.error('SGF 로드 중 오류 발생:', error);
+      alert('SGF 파일을 불러오는 중 오류가 발생했습니다.');
+    }
+  }, [loadSGF, loadSgfFileList]);
+
+  // 즐겨찾기 토글 핸들러
+  const handleToggleFavorite = useCallback((file: SGFFile) => {
+    sgfStorage.toggleFavorite(file.id);
+    // 상태 즉시 갱신
+    loadSgfFileList();
+  }, [loadSgfFileList]);
+
   if (!boardState) {
     return (
       <div className="text-center p-8">
@@ -122,13 +227,12 @@ export default function GameBoard() {
       <NavBar />
       <div className="flex gap-4">
         <LeftSidebar
-          recentFiles={[]} // TODO: Replace with actual recent SGF file data
-          onFileClick={(file) => {
-            // TODO: Add actual SGF file loading logic here
-            console.log('Load file:', file);
-          }}
+          recentFiles={sgfFiles}
+          onFileClick={handleLoadSGF}
+          onToggleFavorite={handleToggleFavorite}
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
+          currentFileId={currentSGFFile?.id}
         />
         <div className="flex-1">
           <div className="container mx-auto p-4 flex flex-col">
@@ -142,21 +246,12 @@ export default function GameBoard() {
               onPass={pass}
               onUndo={undo}
               onRedo={redo}
-              onSave={() => {
-                const sgf = gameRef.current?.saveSGF();
-                if (sgf) {
-                  const now = new Date();
-                  const year = String(now.getFullYear()).slice(-2);
-                  const month = String(now.getMonth() + 1).padStart(2, '0');
-                  const day = String(now.getDate()).padStart(2, '0');
-                  const hours = String(now.getHours()).padStart(2, '0');
-                  const minutes = String(now.getMinutes()).padStart(2, '0');
-                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
-                  const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, fileName);
-                }
+              onSave={handleSaveSGF}
+              onLoad={() => {
+                importSGF();
+                // 파일 불러오기 후 목록 다시 로드
+                setTimeout(loadSgfFileList, 1000);
               }}
-              onLoad={importSGF}
               showOnlyControlButtons={true}
             />
 
@@ -186,20 +281,7 @@ export default function GameBoard() {
               onPass={pass}
               onUndo={undo}
               onRedo={redo}
-              onSave={() => {
-                const sgf = gameRef.current?.saveSGF();
-                if (sgf) {
-                  const now = new Date();
-                  const year = String(now.getFullYear()).slice(-2);
-                  const month = String(now.getMonth() + 1).padStart(2, '0');
-                  const day = String(now.getDate()).padStart(2, '0');
-                  const hours = String(now.getHours()).padStart(2, '0');
-                  const minutes = String(now.getMinutes()).padStart(2, '0');
-                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
-                  const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, fileName);
-                }
-              }}
+              onSave={handleSaveSGF}
               onLoad={importSGF}
               onSelectTool={setCurrentTool}
               selectedTool={currentTool}
@@ -216,20 +298,7 @@ export default function GameBoard() {
               onPass={pass}
               onUndo={undo}
               onRedo={redo}
-              onSave={() => {
-                const sgf = gameRef.current?.saveSGF();
-                if (sgf) {
-                  const now = new Date();
-                  const year = String(now.getFullYear()).slice(-2);
-                  const month = String(now.getMonth() + 1).padStart(2, '0');
-                  const day = String(now.getDate()).padStart(2, '0');
-                  const hours = String(now.getHours()).padStart(2, '0');
-                  const minutes = String(now.getMinutes()).padStart(2, '0');
-                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
-                  const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, fileName);
-                }
-              }}
+              onSave={handleSaveSGF}
               onLoad={importSGF}
               showOnlyScoreBoxes={true}
             />

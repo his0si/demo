@@ -43,10 +43,23 @@ export const sgfStorage = {
       const files = sgfStorage.getAll();
       console.log(`현재 저장된 파일 수: ${files.length}`);
       
+      // 파일명 중복 검사 및 처리
+      let uniqueName = name;
+      let counter = 1;
+      
+      // 동일한 이름의 파일이 있는지 확인하고, 있다면 이름 뒤에 숫자 추가
+      while (files.some(file => file.name === uniqueName)) {
+        const nameParts = name.split('.');
+        const ext = nameParts.pop() || '';
+        const baseName = nameParts.join('.');
+        uniqueName = `${baseName} (${counter}).${ext}`;
+        counter++;
+      }
+      
       // 새 SGF 파일 정보 생성
       const newFile: SGFFile = {
         id: Date.now().toString(),
-        name,
+        name: uniqueName, // 중복 검사 후 고유한 이름 사용
         openedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         favorite: false,
@@ -62,7 +75,7 @@ export const sgfStorage = {
       localStorage.setItem(`sgf-content-${newFile.id}`, content);
       
       // 저장 확인 로그
-      console.log(`SGF 파일 저장 완료: ${name} (ID: ${newFile.id})`);
+      console.log(`SGF 파일 저장 완료: ${uniqueName} (ID: ${newFile.id})`);
       
       // 저장 이벤트를 강제로 발생시켜 다른 컴포넌트에서도 변경 감지
       window.dispatchEvent(new StorageEvent('storage', {

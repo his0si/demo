@@ -31,6 +31,7 @@ export default function GameBoard() {
     game,
     comment,
     setComment,
+    handleDeleteClick,
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
@@ -61,42 +62,51 @@ export default function GameBoard() {
         if (currentTool === 'move') {
           makeMove(x, y);
         } else {
-          const existing = game?.getGameState()?.markers?.find(
+          const currentMarkers = game?.getGameState()?.markers ?? [];
+          const existing = currentMarkers.find(
             (m) => m.x === x && m.y === y
           );
+          
           if (existing?.type === currentTool) {
             if (!game) return;
-            game.markers = game.markers.filter(
-              (m) => !(m.x === x && m.y === y && m.type === currentTool)
-            );
-            const state = game.getGameState();
-            if (state) {
-              state.markers = [...game.markers];
-            }
-            game.notifyStateChange();
+            game.removeMarker(x, y, currentTool);
           } else {
             if (!game) return;
             let label: string | undefined = undefined;
+            
             if (currentTool === 'letter') {
               const allLetters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'];
-              const usedLabels = game.markers
+              const usedLabels = currentMarkers
                 .filter((m) => m.type === 'letter')
                 .map((m) => m.label);
               label = allLetters.find((ch) => !usedLabels.includes(ch)) ?? '?';
             }
+            
             if (currentTool === 'number') {
-              const usedNumbers = game.markers
+              const usedNumbers = currentMarkers
                 .filter((m) => m.type === 'number')
                 .map((m) => parseInt(m.label || '0'));
-              const nextNumber = 1 + Math.max(0, ...usedNumbers);
+              const nextNumber = usedNumbers.length > 0 
+                ? Math.max(...usedNumbers) + 1 
+                : 1;
               label = nextNumber.toString();
             }
+            
             game.addMarker(x, y, currentTool, label);
           }
         }
       }
     },
     [isGameEnded, makeMove, claimTerritory, currentTool, game]
+  );
+
+  const handleMarkerClick = useCallback(
+    (x: number, y: number) => {
+      if (currentTool !== 'move') {
+        handleIntersectionClick(x, y);
+      }
+    },
+    [currentTool, handleIntersectionClick]
   );
 
   if (!boardState) {
@@ -135,8 +145,15 @@ export default function GameBoard() {
               onSave={() => {
                 const sgf = gameRef.current?.saveSGF();
                 if (sgf) {
+                  const now = new Date();
+                  const year = String(now.getFullYear()).slice(-2);
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
                   const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, 'game.sgf');
+                  FileSaver.saveAs(blob, fileName);
                 }
               }}
               onLoad={importSGF}
@@ -150,6 +167,13 @@ export default function GameBoard() {
               isGameEnded={isGameEnded}
               onIntersectionClick={handleIntersectionClick}
               markers={game?.getGameState()?.markers ?? []}
+              showDeleteConfirm={false}
+              deletePosition={null}
+              onDeleteClick={handleDeleteClick}
+              onConfirmDelete={() => {}}
+              onCancelDelete={() => {}}
+              isMarkerMode={currentTool !== 'move'}
+              onMarkerClick={handleMarkerClick}
             />
 
             <GameControls
@@ -165,8 +189,15 @@ export default function GameBoard() {
               onSave={() => {
                 const sgf = gameRef.current?.saveSGF();
                 if (sgf) {
+                  const now = new Date();
+                  const year = String(now.getFullYear()).slice(-2);
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
                   const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, 'game.sgf');
+                  FileSaver.saveAs(blob, fileName);
                 }
               }}
               onLoad={importSGF}
@@ -188,8 +219,15 @@ export default function GameBoard() {
               onSave={() => {
                 const sgf = gameRef.current?.saveSGF();
                 if (sgf) {
+                  const now = new Date();
+                  const year = String(now.getFullYear()).slice(-2);
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
                   const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
-                  FileSaver.saveAs(blob, 'game.sgf');
+                  FileSaver.saveAs(blob, fileName);
                 }
               }}
               onLoad={importSGF}

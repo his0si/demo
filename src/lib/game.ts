@@ -207,7 +207,7 @@ export class Game {
     
     this.intersections = Game.initIntersections(xLines, yLines);
     this.gameState = this.newGameState();
-    const rootNode = {
+    const rootNode: GameNode = {
       id: 'root',
       parentId: null,
       children: [],
@@ -224,11 +224,9 @@ export class Game {
       currentNodeId: 'root',
       mainPath: new Set(['root']),
       get: (id: string): GameNode => {
-        // Map에서 먼저 검색
         const node = this.nodeMap.get(id);
         if (node) return node;
 
-        // Map에 없는 경우 트리 순회로 fallback
         const traverse = (node: GameNode): GameNode | null => {
           if (node.id === id) return node;
           for (const child of node.children) {
@@ -243,7 +241,6 @@ export class Game {
           throw new Error(`Node with id ${id} not found`);
         }
 
-        // 찾은 노드를 Map에 캐시
         this.nodeMap.set(id, result);
         return result;
       }
@@ -271,199 +268,339 @@ export class Game {
   /**
    * SGF 파일 로드
    */
-  public static loadSGF(sgfContent: string): Game | null {
-    const game = new Game();
-    sgfContent = sgfContent.trim().replace(/\)+$/, '');
-    const charToPos = (char: string) => char.charCodeAt(0) - 97;
-  
-    // Parse board size - 정규식 최적화
-    const sizeMatch = sgfContent.match(/SZ\[(\d+)\]/);
+  public loadSGF(sgfContent: string): boolean {
+    sgfContent = sgfContent.trim();
+    
+    // 헤더 정보 파싱
+    const headerMatch = sgfContent.match(/\(;(.*?)(;|$)/);
+    if (headerMatch) {
+      const header = headerMatch[1];
+      // 보드 크기 파싱
+      const sizeMatch = header.match(/SZ\[(\d+)\]/);
     if (sizeMatch) {
       const size = parseInt(sizeMatch[1]);
-      game.xLines = size;
-      game.yLines = size;
-      game.intersections = Game.initIntersections(size, size);
-      game.gameState = game.newGameState();
+        this.xLines = size;
+        this.yLines = size;
+        this.intersections = Game.initIntersections(size, size);
+      }
     }
-  
-    // 노드 파싱 최적화 - 한 번에 분할
-    const nodes = sgfContent.split(';').map(s => s.trim()).filter(s => s);
-    const movePattern = /^(B|W)\[([a-z]{0,2})\]/;
-    const markerPattern = /(TR|SQ|CR|MA|LB)((\[[^\]]+\])+)/g;
-    let lastMoveColor: Stone | null = null;
-  
-    // 이전 게임 상태를 추적하여 불필요한 참조 줄이기
-    let prevState: GameState | null = game.gameState;
-    // let boardState = game.copyIntersections(); // 현재 보드 상태 복사본
-  
-    for (const node of nodes) {
-      const moveMatch = node.match(movePattern);
-      const markers: { x: number; y: number; type: string; label?: string; moveNum?: number }[] = [];
-    
-      // 마커 파싱 - 정규식 재사용
-      let markerMatch;
-      // Define a mapping from SGF marker codes to our internal marker types
-      const typeMapping: { [key: string]: string } = {
-        TR: "triangle",
-        SQ: "square",
-        CR: "circle",
-        MA: "cross",
-        LB: "letter"
+
+    // 게임 상태 초기화
+    this.gameState = null;
+    this.lastMove = null;
+    this.turn = Stone.Black;
+    this.blackScore = 0;
+    this.whiteScore = 0;
+    this.markers = [];
+    this.claimedTerritories = [];
+    this.claimedTerritoryLookup = new HashSet();
+
+    // 루트 노드 초기화
+    const rootNode: GameNode = {
+      id: 'root',
+      parentId: null,
+      children: [],
+      data: {
+        move: { x: -1, y: -1, color: Stone.Black },
+        markers: [],
+        comment: ''
+      }
+    };
+    this.nodeMap.clear(); // 기존 노드 맵 초기화
+    this.nodeMap.set(rootNode.id, rootNode);
+    this.gameTree = {
+      root: rootNode,
+      currentNodeId: 'root',
+      mainPath: new Set(['root']),
+      get: (id: string) => this.findNodeById(id) || rootNode
+    };
+
+    // 노드 데이터 파싱 함수
+    const parseNodeContent = (content: string): {
+      move?: { x: number; y: number; color: Stone };
+      markers: { x: number; y: number; type: string; label?: string }[];
+      comment: string;
+    } => {
+      const moveMatch = content.match(/(B|W)\[([a-z]{2})\]/);
+      
+      // 코멘트 파싱 개선
+      let comment = '';
+      const commentRegex = /C\[((?:[^[\]]|\\\])*?)\]/;
+      const commentMatch = content.match(commentRegex);
+      if (commentMatch) {
+        comment = commentMatch[1].replace(/\\]/g, ']');
+        console.log('Parsed comment:', comment); // 디버깅용 로그 추가
+      }
+
+      const markers: { x: number; y: number; type: string; label?: string }[] = [];
+
+      // 마커 파싱 개선
+      const markerTypes = {
+        TR: 'triangle',
+        SQ: 'square',
+        CR: 'circle',
+        MA: 'cross',
+        LB: 'letter'
       };
 
-      while ((markerMatch = markerPattern.exec(node)) !== null) {
-        const type = markerMatch[1];
-        const coordsStr = markerMatch[2];
-        const coords = coordsStr.match(/\[([a-z]{2})(?::([^\]]+))?\]/g) || [];
+      // 각 마커 타입별로 파싱
+      for (const [sgfType, markerType] of Object.entries(markerTypes)) {
+        // 마커 타입과 모든 좌표를 찾는 정규식
+        const markerRegex = new RegExp(`${sgfType}((?:\\[[a-z]{2}\\])+)`, 'g');
+        let markerMatch;
         
-        for (let i = 0; i < coords.length; i++) {
-          const coord = coords[i];
-          const posMatch = coord.match(/\[([a-z]{2})(?::([^\]]+))?\]/);
-          if (posMatch) {
-            const pos = posMatch[1];
-            const label = posMatch[2];
-            const x = charToPos(pos[0]);
-            const y = charToPos(pos[1]);
-            markers.push({
-              x,
-              y,
-              type: typeMapping[type] || type.toLowerCase(),
-              label
-            });
+        while ((markerMatch = markerRegex.exec(content)) !== null) {
+          // 모든 좌표를 찾는 정규식
+          const coordRegex = /\[([a-z]{2})\]/g;
+          let coordMatch;
+          const fullMatch = markerMatch[1];
+          
+          while ((coordMatch = coordRegex.exec(fullMatch)) !== null) {
+            const coord = coordMatch[1];
+            const x = coord.charCodeAt(0) - 97;
+            const y = coord.charCodeAt(1) - 97;
+            markers.push({ x, y, type: markerType });
           }
         }
       }
-      
-      // 마커 파싱 이후에 node의 moveNum을 각 마커에 할당
-      if (markers.length > 0) {
-        const nodeMoveNum = (prevState ? prevState.moveNum + 1 : 0);
-        for (let i = 0; i < markers.length; i++) {
-          markers[i].moveNum = nodeMoveNum;
+
+      // LB 마커 파싱 (라벨 포함)
+      const lbRegex = /LB(?:\[([a-z]{2}):([^\]]+)\])+/g;
+      let lbMatch;
+      while ((lbMatch = lbRegex.exec(content)) !== null) {
+        const fullMatch = lbMatch[0];
+        const lbMarkers = fullMatch.match(/\[([a-z]{2}):([^\]]+)\]/g);
+        if (lbMarkers) {
+          for (const marker of lbMarkers) {
+            const [, pos, label] = marker.match(/\[([a-z]{2}):([^\]]+)\]/) || [];
+            if (pos) {
+              const x = pos.charCodeAt(0) - 97;
+              const y = pos.charCodeAt(1) - 97;
+              markers.push({ x, y, type: 'letter', label });
+            }
+          }
         }
       }
-      
-      // 코멘트 추출 - 정규식 간소화
-      const commentMatch = node.match(/C\[([\s\S]*?)\](?=\s|$)/);
-      const comment = commentMatch ? commentMatch[1].replace(/\\]/g, "]") : '';
-      
-      // 수가 없으면 건너뜀 (하지만 마커나 코멘트가 있으면 처리)
-      if (!moveMatch && markers.length === 0 && !comment) continue;
-      
-      const color = moveMatch ? (moveMatch[1] === 'B' ? Stone.Black : Stone.White) : game.turn;
-      const coord = moveMatch ? moveMatch[2] : '';
-      
-      // 보드 상태 복사 대신 기존 배열 재사용
-      const newBoardState = game.copyIntersections();
-      
-      if (moveMatch && coord !== '') {
-        const x = charToPos(coord[0]);
-        const y = charToPos(coord[1]);
 
-        newBoardState[x][y].stone = color;
-
-        if (game.intersections[x][y].stone === Stone.None) {
-          game.intersections[x][y].stone = color;
-
-          const otherPlayer = color === Stone.Black ? Stone.White : Stone.Black;
-          const capturedGroups = [];
-          const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-          const processedStones = new Set<string>();
-          let numCaptured = 0;
-
-          for (const [dx, dy] of directions) {
-            const nx = x + dx;
-            const ny = y + dy;
-
-            if (nx >= 0 && nx < game.xLines && ny >= 0 && ny < game.yLines) {
-              const neighbor = game.intersections[nx][ny];
-
-              if (neighbor.stone === otherPlayer && !processedStones.has(`${nx},${ny}`)) {
-                const captured = game.getCapturedGroup(neighbor);
-
-                if (captured.length > 0) {
-                  capturedGroups.push(captured);
-
-                  for (const stone of captured) {
-                    processedStones.add(`${stone.xPos},${stone.yPos}`);
-                    newBoardState[stone.xPos][stone.yPos].stone = Stone.None;
-                    game.intersections[stone.xPos][stone.yPos].stone = Stone.None;
-                    numCaptured++;
-                  }
-                }
-              }
-            }
-          }
-
-          const selfCaptured = game.getCapturedGroup(game.intersections[x][y]);
-          if (selfCaptured.length > 0) {
-            for (const stone of selfCaptured) {
-              newBoardState[stone.xPos][stone.yPos].stone = Stone.None;
-              game.intersections[stone.xPos][stone.yPos].stone = Stone.None;
-            }
-          }
-
-          if (numCaptured > 0) {
-            if (color === Stone.Black) {
-              game.blackScore += numCaptured;
-            } else {
-              game.whiteScore += numCaptured;
-            }
-          }
-
-          game.lastMove = game.intersections[x][y];
-        }
-      }
-      
-      // 게임 상태 생성 및 연결
-      const newState = new GameStateImpl(
-        newBoardState,
-        color,
-        game.blackScore,
-        game.whiteScore,
-        prevState,
+      return {
+        move: moveMatch ? {
+          x: moveMatch[2].charCodeAt(0) - 97,
+          y: moveMatch[2].charCodeAt(1) - 97,
+          color: moveMatch[1] === 'B' ? Stone.Black : Stone.White
+        } : undefined,
         markers,
         comment
-      );
-      
-      if (coord !== '' && moveMatch) {
-        const x = charToPos(coord[0]);
-        const y = charToPos(coord[1]);
-        newState.move = newBoardState[x][y].copy();
+      };
+    };
+
+    // SGF 문자열 파싱을 위한 재귀 함수
+    const parseSGF = (content: string, parentNode: GameNode): void => {
+      let currentNode = parentNode;
+      let buffer = '';
+      let i = 0;
+
+      while (i < content.length) {
+        const char = content[i];
+
+        if (char === '(') {
+          // 새로운 분기 시작
+          if (buffer.trim()) {
+            // 버퍼에 있는 내용으로 노드 생성
+            const nodeData = parseNodeContent(buffer);
+            if (nodeData.move || nodeData.markers.length > 0 || nodeData.comment) {
+              const newNode: GameNode = {
+                id: Math.random().toString(36).slice(2),
+                parentId: currentNode.id,
+                children: [],
+                data: {
+                  move: nodeData.move || { x: -1, y: -1, color: Stone.Black },
+                  markers: nodeData.markers,
+                  comment: nodeData.comment
+                }
+              };
+              currentNode.children.push(newNode);
+              this.nodeMap.set(newNode.id, newNode);
+              currentNode = newNode;
+            }
+            buffer = '';
+          }
+
+          // 분기 내용 파싱
+          const branchEnd = findMatchingParenthesis(content, i);
+          if (branchEnd === -1) break;
+
+          const branchContent = content.slice(i + 1, branchEnd);
+          parseSGF(branchContent, currentNode);
+          i = branchEnd + 1;
+        } else if (char === ';') {
+          // 이전 노드 처리
+          if (buffer.trim()) {
+            const nodeData = parseNodeContent(buffer);
+            if (nodeData.move || nodeData.markers.length > 0 || nodeData.comment) {
+              const newNode: GameNode = {
+                id: Math.random().toString(36).slice(2),
+                parentId: currentNode.id,
+                children: [],
+                data: {
+                  move: nodeData.move || { x: -1, y: -1, color: Stone.Black },
+                  markers: nodeData.markers,
+                  comment: nodeData.comment
+                }
+              };
+              currentNode.children.push(newNode);
+              this.nodeMap.set(newNode.id, newNode);
+              currentNode = newNode;
+            }
+            buffer = '';
+          }
+          i++;
+        } else {
+          buffer += char;
+          i++;
+        }
       }
-      
-      // 상태 업데이트
-      if (prevState) {
-        prevState.nextGameState = newState;
+
+      // 마지막 버퍼 처리
+      if (buffer.trim()) {
+        const nodeData = parseNodeContent(buffer);
+        if (nodeData.move || nodeData.markers.length > 0 || nodeData.comment) {
+          const newNode: GameNode = {
+            id: Math.random().toString(36).slice(2),
+            parentId: currentNode.id,
+            children: [],
+            data: {
+              move: nodeData.move || { x: -1, y: -1, color: Stone.Black },
+              markers: nodeData.markers,
+              comment: nodeData.comment
+            }
+          };
+          currentNode.children.push(newNode);
+          this.nodeMap.set(newNode.id, newNode);
+        }
       }
-      
-      prevState = newState;
-      // boardState = newBoardState;
-      
-      if (!game.gameState || game.gameState.moveNum === 0) {
-        game.gameState = newState;
+    };
+
+    // 괄호 매칭을 찾는 헬퍼 함수
+    const findMatchingParenthesis = (str: string, start: number): number => {
+      let count = 1;
+      for (let i = start + 1; i < str.length; i++) {
+        if (str[i] === '(') count++;
+        if (str[i] === ')') count--;
+        if (count === 0) return i;
       }
-      
-      game.setTurn(color);
-      lastMoveColor = color;
+      return -1;
+    };
+
+    // SGF 파싱 시작
+    const mainContent = sgfContent.slice(sgfContent.indexOf(';'));
+    parseSGF(mainContent, rootNode);
+
+    // 메인 패스 설정
+    this.updateMainPath();
+    
+    // 루트 노드로 이동
+    this.currentNode = rootNode;
+    this.gameTree.currentNodeId = rootNode.id;
+    
+    // 루트 노드의 상태로 복원
+    this.restoreGameState(rootNode);
+    
+    return true;
+  }
+
+  /**
+   * 새 노드 생성
+   */
+  private createNode(
+    parentNode: GameNode,
+    color: Stone,
+    x: number,
+    y: number,
+    markers: { x: number; y: number; type: string; label?: string }[],
+    comment: string
+  ): GameNode {
+    const newNode: GameNode = {
+      id: Math.random().toString(36).slice(2),
+      parentId: parentNode.id,
+      children: [],
+      data: {
+        move: { x, y, color },
+        markers: [...markers],
+        comment,
+        boardState: this.copyIntersections(),
+        blackScore: this.blackScore,
+        whiteScore: this.whiteScore
+      }
+    };
+    
+    parentNode.children.push(newNode);
+    this.nodeMap.set(newNode.id, newNode);
+    
+    return newNode;
+  }
+
+  /**
+   * 메인 패스 업데이트
+   */
+  private updateMainPath(): void {
+    const mainPath = new Set(['root']);
+    let current = this.currentNode;
+    
+    while (current) {
+      mainPath.add(current.id);
+      if (current.parentId) {
+        const parent = this.findNodeById(current.parentId);
+        if (!parent) break;
+        current = parent;
+      } else {
+        break;
+      }
     }
     
-    // 최종 상태 적용: 게임 상태 체인의 마지막 상태(prevState)를 그대로 사용하여, 각 노드의 마커가 온전하게 보존되도록 함
-    if (prevState && prevState !== game.gameState) {
-      game.gameState = prevState;
+    this.gameTree.mainPath = mainPath;
+  }
+
+  /**
+   * 노드를 바둑판에 적용
+   */
+  private applyNodeToBoard(node: GameNode): void {
+    // 바둑판 초기화
+    this.intersections = Game.initIntersections(this.xLines, this.yLines);
+    
+    // 루트부터 현재 노드까지의 경로 찾기
+    const path: GameNode[] = [];
+    let current: GameNode | null = node;
+    
+    while (current) {
+      path.unshift(current);
+      if (current.parentId) {
+        const parent = this.findNodeById(current.parentId);
+        if (!parent) break;
+        current = parent;
+      } else {
+        break;
+      }
     }
     
-    if (game.stateChangeCallback) {
-      game.stateChangeCallback();
+    // 경로상의 모든 수를 순서대로 적용
+    for (const node of path) {
+      const { move, markers } = node.data;
+      if (move && move.x >= 0 && move.y >= 0) {
+        this.intersections[move.x][move.y].stone = move.color;
+      }
+      // 마커 적용
+      if (markers) {
+        this.markers = markers.slice();
+      }
     }
-
-    // 마지막 수가 흑이면 백의 턴, 백이면 흑의 턴으로 설정
-    if (lastMoveColor === Stone.Black) {
-      game.setTurn(Stone.White);
-    } else if (lastMoveColor === Stone.White) {
-      game.setTurn(Stone.Black);
+    
+    // 턴 설정
+    const { move } = node.data;
+    if (move) {
+      this.turn = move.color === Stone.Black ? Stone.White : Stone.Black;
+    } else {
+      this.turn = Stone.Black;
     }
-
-    return game;
   }
 
   /**
@@ -475,7 +612,6 @@ export class Game {
     const serializeNode = (node: GameNode): string => {
       let sgf = '';
       
-      // 현재 노드의 데이터를 SGF로 변환
       if (node.id !== 'root') {
         const move = node.data.move!;
         sgf += `;${move.color === Stone.Black ? 'B' : 'W'}[${this.convertToSGFCoord(move.x, move.y)}]`;
@@ -491,24 +627,26 @@ export class Game {
             SQ: [] as string[], // square
             CR: [] as string[], // circle
             MA: [] as string[], // cross
-            LB: [] as string[], // label
+            LB: [] as string[], // label and number
           };
 
           node.data.markers.forEach(marker => {
-            const coord = `[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}]`;
+            const coord = `${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}`;
             switch (marker.type) {
-              case 'triangle': markerGroups.TR.push(coord); break;
-              case 'square': markerGroups.SQ.push(coord); break;
-              case 'circle': markerGroups.CR.push(coord); break;
-              case 'cross': markerGroups.MA.push(coord); break;
+              case 'triangle': markerGroups.TR.push(`[${coord}]`); break;
+              case 'square': markerGroups.SQ.push(`[${coord}]`); break;
+              case 'circle': markerGroups.CR.push(`[${coord}]`); break;
+              case 'cross': markerGroups.MA.push(`[${coord}]`); break;
               case 'letter':
+              case 'number':
                 if (marker.label) {
-                  markerGroups.LB.push(`[${String.fromCharCode(97 + marker.x)}${String.fromCharCode(97 + marker.y)}:${marker.label}]`);
+                  markerGroups.LB.push(`[${coord}:${marker.label}]`);
                 }
                 break;
             }
           });
 
+          // SGF 문자열에 마커 추가
           Object.entries(markerGroups).forEach(([type, coords]) => {
             if (coords.length > 0) {
               sgf += `${type}${coords.join('')}`;
@@ -517,16 +655,12 @@ export class Game {
         }
       }
 
-      // 자식 노드가 있는 경우
       if (node.children.length > 0) {
-        // 모든 자식이 변화도가 되어야 함
         const variations = node.children.map(child => serializeNode(child));
         
         if (variations.length === 1) {
-          // 자식이 하나면 그대로 이어서 작성
           sgf += variations[0];
         } else {
-          // 자식이 여러 개면 각각을 괄호로 감싸서 병렬로 작성
           sgf += variations.map(v => `(${v})`).join('');
         }
       }
@@ -705,6 +839,21 @@ export class Game {
     // 이동을 기록하고 턴 변경
     this.lastMove = this.intersections[xPos][yPos];
 
+    // 현재 노드의 자식들 중에서 동일한 수가 있는지 확인
+    const existingNode = this.currentNode.children.find(child => 
+      child.data.move && 
+      child.data.move.x === xPos && 
+      child.data.move.y === yPos
+    );
+
+    if (existingNode) {
+      // 동일한 수가 있는 경우 해당 분기로 이동
+      this.navigateToNode(existingNode.id);
+      this.notifyStateChange();
+      return true;
+    }
+
+    // 새로운 분기 생성
     const newNode: GameNode = {
       id: Math.random().toString(36).slice(2),
       parentId: this.currentNode.id,
@@ -712,7 +861,10 @@ export class Game {
       data: {
         move: { x: xPos, y: yPos, color: this.turn },
         comment: '',
-        markers: [] // 초기 마커 배열 설정
+        markers: [],
+        boardState: this.copyIntersections(),
+        blackScore: this.blackScore,
+        whiteScore: this.whiteScore
       }
     };
 
@@ -735,7 +887,7 @@ export class Game {
     this.nodeMap.set(newNode.id, newNode);
     this.currentNode = newNode;
     this.gameTree.currentNodeId = newNode.id;
-    this.gameTree.mainPath = newMainPath;  // 메인 패스 업데이트
+    this.gameTree.mainPath = newMainPath;
 
     this.notifyStateChange();
     this.nextTurn();
@@ -778,78 +930,122 @@ export class Game {
 
   public navigateToNode(nodeId: string): void {
     const targetNode = this.findNodeById(nodeId);
-    if (!targetNode) return;
+    if (!targetNode) {
+      console.error('Target node not found:', nodeId);
+      return;
+    }
 
-    // 1. 새로운 메인 패스 생성
-    const newMainPath = new Set(['root']);
-    
-    // 2. 선택된 노드부터 루트까지의 경로를 메인 패스로 설정
-    let current: GameNode | null = targetNode;
-    while (current) {
-      newMainPath.add(current.id);
-      if (current.parentId) {
-        current = this.findNodeById(current.parentId);
-      } else {
-        break;
+    // 현재 노드의 코멘트와 마커 정보 저장
+    if (this.currentNode) {
+      // gameState가 존재하는 경우에만 코멘트 저장
+      if (this.gameState) {
+        this.currentNode.data.comment = this.gameState.comment;
+      }
+      if (this.markers.length > 0) {
+        this.currentNode.data.markers = [...this.markers];
       }
     }
 
-    // 3. 첫 번째 자식들도 메인 패스에 포함
-    current = targetNode;
-    while (current && current.children && current.children.length > 0) {
-      const firstChild: GameNode = current.children[0];
-      if (firstChild) {
-        newMainPath.add(firstChild.id);
-        current = firstChild;
+    // 게임 상태 복원
+    this.restoreGameState(targetNode);
+
+    // 현재 노드 업데이트
+    this.currentNode = targetNode;
+    this.gameTree.currentNodeId = nodeId;
+
+    // 메인 경로 업데이트
+    this.updateMainPath();
+
+    // 상태 변경 알림
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback();
+    }
+  }
+
+  private restoreGameState(targetNode: GameNode): void {
+    // 1. 보드 초기화
+    this.intersections = Game.initIntersections(this.xLines, this.yLines);
+    this.turn = Stone.Black;
+    this.blackScore = 0;
+    this.whiteScore = 0;
+    this.lastMove = null;
+    this.markers = [];
+    
+    // 2. 루트부터 타겟 노드까지의 경로 찾기
+    const path = this.getPathToNode(targetNode);
+
+    // 3. 경로를 따라가며 수를 놓기
+    for (const node of path) {
+      const move = node.data.move;
+      if (move && move.x >= 0 && move.y >= 0) {
+        // 임시로 돌 놓기
+        this.intersections[move.x][move.y].stone = move.color;
+
+        // 상대방 돌 잡기
+        const capturedNeighbors = this.getCapturedNeighbors(move.x, move.y);
+        let legalMove = capturedNeighbors.length > 0;
+        
+        // 잡힌 돌이 없다면, 방금 놓은 돌이 잡히는지 확인
+        if (!legalMove) {
+          const selfCaptured = this.getCapturedGroup(this.intersections[move.x][move.y]);
+          legalMove = selfCaptured.length === 0;
+        }
+        
+        // 유효한 수가 아니면 돌을 제거하고 종료
+        if (!legalMove) {
+          this.intersections[move.x][move.y].stone = Stone.None;
+          continue;
+        }
+        
+        // 상대방 돌 제거 및 점수 계산
+        let numCaptured = 0;
+        for (const group of capturedNeighbors) {
+          for (const stone of group) {
+            // 명시적으로 돌을 제거
+            this.intersections[stone.xPos][stone.yPos].stone = Stone.None;
+            numCaptured++;
+          }
+        }
+        
+        // 점수 업데이트
+        if (numCaptured > 0) {
+          if (move.color === Stone.Black) {
+            this.blackScore += numCaptured;
+          } else {
+            this.whiteScore += numCaptured;
+          }
+        }
+
+        // 현재 상태 저장
+        node.data.boardState = this.copyIntersections();
+        node.data.blackScore = this.blackScore;
+        node.data.whiteScore = this.whiteScore;
+
+        // 마지막 수와 턴 업데이트
+        this.lastMove = this.intersections[move.x][move.y];
+        this.turn = this.getOtherPlayer(move.color);
+      }
+
+      // 마커 복원
+      if (node.data.markers) {
+        this.markers = [...node.data.markers];
+      }
+
+      // 코멘트 복원
+      if (!this.gameState) {
+        this.gameState = this.newGameState(node.data.comment || '');
       } else {
-        break;
+        this.gameState.comment = node.data.comment || '';
       }
     }
 
     // 4. 게임 상태 업데이트
-    this.gameTree.mainPath = newMainPath;
-    this.gameTree.currentNodeId = nodeId;
-    this.currentNode = targetNode;
-
-    // 5. 보드 상태 복원
-    this.restoreGameState(targetNode);
-
-    // 마커 상태 동기화 추가
-    this.markers = targetNode.data.markers || [];
-    if (this.gameState) {
-      this.gameState.markers = this.markers;
+    if (!this.gameState) {
+      this.gameState = this.newGameState();
     }
-
-    // 코멘트 상태 동기화 추가
-    if (this.gameState) {
-      this.gameState.comment = targetNode.data.comment || '';
-    }
-
-    this.notifyStateChange();
-  }
-
-  private restoreGameState(targetNode: GameNode): void {
-    // 보드 초기화
-    this.intersections = Game.initIntersections(this.xLines, this.yLines);
-    this.blackScore = 0;
-    this.whiteScore = 0;
-    
-    // 경로상의 모든 수를 복원
-    const path = this.getPathToNode(targetNode);
-    for (const node of path) {
-      const move = node.data.move;
-      if (move && move.x >= 0 && move.y >= 0) {
-        this.intersections[move.x][move.y].stone = move.color;
-        // 턴 업데이트
-        this.turn = move.color === Stone.Black ? Stone.White : Stone.Black;
-      }
-    }
-
-    // 마커 상태 복원
-    this.markers = targetNode.data.markers || [];
-    if (this.gameState) {
-      this.gameState.markers = this.markers;
-    }
+    this.gameState.markers = this.markers;
+    this.gameState.blackScore = this.blackScore;
+    this.gameState.whiteScore = this.whiteScore;
   }
 
   /**
@@ -1237,10 +1433,27 @@ export class Game {
   public getLastMove(): Intersection | null { return this.lastMove; }
   public getGameState(): GameState | null { return this.gameState; }
   public getCurrentAndNextMove(): { current?: Intersection; next?: Intersection } {
+    if (!this.currentNode) return {};
+
+    // 현재 노드의 수
+    const currentMove = this.currentNode.data.move;
+    const current = currentMove && currentMove.x >= 0 && currentMove.y >= 0
+      ? this.intersections[currentMove.x][currentMove.y]
+      : undefined;
+
+    // 다음 노드의 수 찾기
+    if (this.currentNode.children.length > 0) {
+      const nextNode = this.currentNode.children[0];
+      const nextMove = nextNode.data.move;
+      if (nextMove && nextMove.x >= 0 && nextMove.y >= 0) {
     return {
-      current: this.gameState?.prevGameState?.move ?? undefined,
-      next: this.gameState?.move ?? undefined
+          current,
+          next: this.intersections[nextMove.x][nextMove.y]
     };
+      }
+    }
+
+    return { current };
   }
 
   public getScoreWithTerritory(color: Stone): { score: number, territory: number } {
@@ -1288,6 +1501,35 @@ export class Game {
     // GameState와 동기화
     if (this.gameState) {
       this.gameState.markers = [...this.currentNode.data.markers];
+    }
+    
+    this.notifyStateChange();
+  }
+
+  public removeMarker(x: number, y: number, type: string): void {
+    this.markers = this.markers.filter(
+      (m) => !(m.x === x && m.y === y && m.type === type)
+    );
+    
+    // SGF 노드에도 마커 제거 정보 추가
+    const currentNode = this.getCurrentNode();
+    if (currentNode) {
+      if (!currentNode.data) currentNode.data = {};
+      // 제거된 마커 정보를 SGF 노드에 기록
+      currentNode.data[`RE_${type.toUpperCase()}`] = `${x},${y}`;
+
+      // 현재 노드의 마커 배열도 업데이트
+      if (!currentNode.data.markers) {
+        currentNode.data.markers = [];
+      }
+      currentNode.data.markers = currentNode.data.markers.filter(
+        (m) => !(m.x === x && m.y === y && m.type === type)
+      );
+
+      // GameState와 동기화
+      if (this.gameState) {
+        this.gameState.markers = [...currentNode.data.markers];
+      }
     }
     
     this.notifyStateChange();
@@ -1389,5 +1631,116 @@ export class Game {
     }
 
     this.notifyStateChange();
+  }
+
+  public getCurrentNode(): GameNode | null {
+    return this.currentNode;
+  }
+
+  /**
+   * 현재 노드 삭제
+   * 현재 노드와 그 자식들을 모두 삭제하고, 이전 노드로 이동
+   */
+  public deleteCurrentNode(): boolean {
+    if (!this.currentNode || this.currentNode.id === 'root') return false;
+
+    const parentNode = this.findNodeById(this.currentNode.parentId!);
+    if (!parentNode) return false;
+
+    // 1. 현재 노드의 모든 자식 노드들을 Map에서 제거
+    const removeNodeAndChildren = (node: GameNode) => {
+      this.nodeMap.delete(node.id);
+      for (const child of node.children) {
+        removeNodeAndChildren(child);
+      }
+    };
+    removeNodeAndChildren(this.currentNode);
+
+    // 2. 부모 노드의 자식 목록에서 현재 노드 제거
+    const childIndex = parentNode.children.findIndex(child => child.id === this.currentNode.id);
+    if (childIndex !== -1) {
+      parentNode.children.splice(childIndex, 1);
+    }
+
+    // 3. 부모 노드로 이동하고 게임 상태 복원
+    this.currentNode = parentNode;
+    this.gameTree.currentNodeId = parentNode.id;
+    this.restoreGameState(parentNode);
+
+    // 4. 메인 경로 업데이트
+    this.updateMainPath();
+
+    // 5. 게임 상태 업데이트
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback();
+    }
+
+    return true;
+  }
+
+  /**
+   * 특정 위치의 돌 삭제
+   * 해당 위치의 돌이 현재 노드의 수인 경우에만 삭제 가능
+   */
+  public deleteStone(x: number, y: number): boolean {
+    console.log('Deleting stone at:', { x, y });
+    if (!this.intersections[x] || !this.intersections[x][y]) {
+      console.log('Invalid position:', { x, y });
+      return false;
+    }
+
+    if (this.intersections[x][y].stone === Stone.None) {
+      console.log('No stone at position:', { x, y });
+      return false;
+    }
+
+    // 현재 노드의 수인지 확인
+    if (!this.currentNode || this.currentNode.id === 'root') {
+      console.log('Cannot delete: No current node or root node');
+      return false;
+    }
+
+    const currentMove = this.currentNode.data.move;
+    if (!currentMove || currentMove.x !== x || currentMove.y !== y) {
+      console.log('Cannot delete: Not the current move');
+      return false;
+    }
+
+    // 현재 노드의 코멘트와 마커 정보 저장
+    const parentNode = this.findNodeById(this.currentNode.parentId!);
+    if (!parentNode) {
+      console.log('Cannot delete: No parent node found');
+      return false;
+    }
+
+    // 1. 현재 노드의 모든 자식 노드들을 Map에서 제거
+    const removeNodeAndChildren = (node: GameNode) => {
+      this.nodeMap.delete(node.id);
+      for (const child of node.children) {
+        removeNodeAndChildren(child);
+      }
+    };
+    removeNodeAndChildren(this.currentNode);
+
+    // 2. 부모 노드의 자식 목록에서 현재 노드 제거
+    const childIndex = parentNode.children.findIndex(child => child.id === this.currentNode.id);
+    if (childIndex !== -1) {
+      parentNode.children.splice(childIndex, 1);
+    }
+
+    // 3. 부모 노드로 이동하고 게임 상태 복원
+    this.currentNode = parentNode;
+    this.gameTree.currentNodeId = parentNode.id;
+    this.restoreGameState(parentNode);
+
+    // 4. 메인 경로 업데이트
+    this.updateMainPath();
+
+    // 5. 게임 상태 업데이트
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback();
+    }
+
+    return true;
   }
 }

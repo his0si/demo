@@ -47,8 +47,14 @@ export default function GameTree({
     const edges: ReactElement[] = [];
     
     function addEdge(from: GameNode, to: GameNode) {
-      const fromPos = layout.positions.get(from.id)!;
-      const toPos = layout.positions.get(to.id)!;
+      const fromPos = layout.positions.get(from.id);
+      const toPos = layout.positions.get(to.id);
+      
+      // 위치 데이터가 없는 경우 edge를 그리지 않음
+      if (!fromPos || !toPos) {
+        console.warn(`Missing position data for nodes: ${from.id} -> ${to.id}`);
+        return;
+      }
       
       // 시작점과 끝점 - gridSize 사용
       const x1 = fromPos.x * gridSize;
@@ -83,11 +89,17 @@ export default function GameTree({
       );
     }
 
-    // 모든 노드에 대해 자식 노드로의 연결선 추가
     function traverse(node: GameNode) {
+      // 노드가 없거나 children이 없는 경우 처리
+      if (!node || !node.children) {
+        return;
+      }
+
       node.children.forEach(child => {
-        addEdge(node, child);
-        traverse(child);
+        if (child) {  // child가 유효한 경우에만 처리
+          addEdge(node, child);
+          traverse(child);
+        }
       });
     }
 

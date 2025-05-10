@@ -37,7 +37,7 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
           <div className="h-[calc(100%-2rem)] bg-white rounded p-2">  {/* bg-white를 bg-transparent로 변경 */}
             {gameTree ? (
               <div className="h-full overflow-auto">
-                <div className="min-w-[150px] overflow-x-auto">
+                <div className="h-full min-w-[150px] overflow-x-auto">
                   <GameTreeManager
                     gameTree={gameTree}
                     onNodeClick={(nodeId) => {
@@ -69,12 +69,12 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
 
       {/* Comment 영역 */}
       <div className="flex-1 p-4">
-        <h3 className="text-md font-semibold mb-1">User Comment</h3>
+        <h3 className="text-md font-semibold mb-1">Memo</h3>
         <textarea
           value={comment}
           onChange={(e) => handleCommentChange(e.target.value)}
-          className="w-full h-32 p-2 border rounded"
-          placeholder="코멘트를 입력하세요..."
+          className="w-full h-64 p-2 rounded bg-white resize-none"
+          placeholder="메모를 입력하세요"
         />
       </div>
     </div>

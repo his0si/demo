@@ -73,7 +73,11 @@ export interface GameBoardConfig {
 
 // NodeData의 인덱스 시그니처를 더 구체적인 타입으로 변경
 export interface NodeData {
-  move?: Move;
+  move?: {
+    x: number;
+    y: number;
+    color: Stone;
+  };
   comment?: string;
   markers?: {
     x: number;
@@ -82,6 +86,7 @@ export interface NodeData {
     label?: string;
     moveNum?: number;
   }[];
+  [key: string]: unknown; // any를 unknown으로 변경
 }
 
 export interface GameNode {
@@ -156,4 +161,15 @@ export interface MatrixDictParams {
   nodes: GameNode[];
   currentNodeId: string;
   onNodeClick: (nodeId: string) => void;  // nodeId 매개변수 추가
+}
+
+export interface Position {
+  x: number;
+  y: number;
+}
+
+export interface LayoutResult {
+  positions: Map<string, Position>;
+  width: number;
+  height: number;
 }

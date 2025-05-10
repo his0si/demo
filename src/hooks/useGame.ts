@@ -17,6 +17,8 @@ export default function useGame() {
   const [lastMove, setLastMove] = useState<{x: number, y: number} | null>(null);
   const [markers, setMarkers] = useState<{ x: number; y: number; type: string; label?: string; moveNum?: number }[]>([]);
   const gameRef = useRef<Game | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePosition, setDeletePosition] = useState<{x: number, y: number} | null>(null);
   
   // 게임 상태 변화 시 UI 업데이트
   const updateGameState = useCallback(() => {
@@ -63,20 +65,21 @@ export default function useGame() {
   
   // SGF 로드
   const loadSGF = useCallback((sgfContent: string) => {
-    const loadedGame = Game.loadSGF(sgfContent);
-    if (loadedGame) {
-      loadedGame.setStateChangeCallback(updateGameState);
-      gameRef.current = loadedGame;
-      setGame(loadedGame);
+    if (!gameRef.current) {
+      gameRef.current = new Game(19, 19, updateGameState);
+    }
+    const success = gameRef.current.loadSGF(sgfContent);
+    if (success) {
+      setGame(gameRef.current);
       setIsGameStarted(true);
-      setBoardState([...loadedGame.intersections]);
-      setBlackScore(loadedGame.getBlackScore());
-      setWhiteScore(loadedGame.getWhiteScore());
-      setCurrentPlayer(loadedGame.getTurn());
-      const lastMove = loadedGame.getLastMove();
+      setBoardState([...gameRef.current.intersections]);
+      setBlackScore(gameRef.current.getBlackScore());
+      setWhiteScore(gameRef.current.getWhiteScore());
+      setCurrentPlayer(gameRef.current.getTurn());
+      const lastMove = gameRef.current.getLastMove();
       setLastMove(lastMove ? {x: lastMove.xPos, y: lastMove.yPos} : null);
-      setMarkers(loadedGame.markers ?? []);
-      setComment(loadedGame.getGameState()?.comment ?? '');
+      setMarkers(gameRef.current.markers ?? []);
+      setComment(gameRef.current.getGameState()?.comment ?? '');
     }
   }, [updateGameState]);
   
@@ -163,6 +166,66 @@ export default function useGame() {
     updateGameState();
   }, [updateGameState]);
 
+  // 돌 삭제 처리
+  const handleDeleteClick = useCallback((x: number, y: number) => {
+    console.log('handleDeleteClick called with:', { x, y });
+    if (!gameRef.current) {
+      console.error('gameRef.current is null');
+      return;
+    }
+    
+    // 돌이 있는지 확인
+    if (!boardState || !boardState[x] || !boardState[y] || boardState[x][y].stone === Stone.None) {
+      console.error('No stone at position:', { x, y });
+      return;
+    }
+    
+    // 바로 삭제 실행
+    const success = gameRef.current.deleteStone(x, y);
+    if (success) {
+      console.log('Stone deleted successfully');
+      // 게임 상태 업데이트
+      setBoardState([...gameRef.current.intersections]);
+      updateGameState();
+    } else {
+      console.log('Failed to delete stone');
+    }
+  }, [boardState, updateGameState]);
+
+  // 삭제 확인
+  const confirmDelete = useCallback(() => {
+    if (!deletePosition || !gameRef.current) {
+      console.error('Cannot delete: deletePosition or gameRef.current is null');
+      return;
+    }
+    
+    console.log('Confirming delete at:', deletePosition);
+    const success = gameRef.current.deleteStone(deletePosition.x, deletePosition.y);
+    if (success) {
+      console.log('Stone deleted successfully');
+      setShowDeleteConfirm(false);
+      setDeletePosition(null);
+      updateGameState();
+    } else {
+      console.error('Failed to delete stone');
+    }
+  }, [deletePosition, updateGameState]);
+
+  // 삭제 취소
+  const cancelDelete = useCallback(() => {
+    console.log('Canceling delete');
+    setShowDeleteConfirm(false);
+    setDeletePosition(null);
+  }, []);
+
+  // 코멘트 업데이트 함수
+  const updateComment = useCallback((newComment: string) => {
+    setComment(newComment);
+    if (gameRef.current) {
+      gameRef.current.updateComment(newComment);
+    }
+  }, []);
+
   return {
     game,
     isGameStarted,
@@ -174,19 +237,23 @@ export default function useGame() {
     whiteTerritory,
     currentPlayer,
     lastMove,
-    startGame,
-    loadSGF,
+    markers,
+    comment,
     makeMove,
     pass,
     undo,
     redo,
     saveSGF,
-    claimTerritory,
     importSGF,
-    markers,
-    setMarkers,
-    comment,
-    setComment,
+    claimTerritory,
     addMarker,
+    showDeleteConfirm,
+    deletePosition,
+    handleDeleteClick,
+    confirmDelete,
+    cancelDelete,
+    startGame,
+    loadSGF,
+    setComment: updateComment
   };
 }

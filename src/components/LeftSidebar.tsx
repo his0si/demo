@@ -17,31 +17,20 @@ export interface SGFFile {
   id: string;
   name: string;
   openedAt: string;
-  createdAt: string; // 등록한 날짜 추가
-  favorite?: boolean; // 즐겨찾기 여부
-  thumbnail?: string; // 썸네일 이미지 경로
+  createdAt: string;
+  favorite?: boolean;
+  thumbnail?: string;
 }
 
-// 임시 데이터 (createdAt 추가)
-const sampleSGFFiles: SGFFile[] = [
-  { 
-    id: '1', 
-    name: '알파고 vs 이세돌 1국', 
-    openedAt: '2025-05-08T10:30:00Z',
-    createdAt: '2025-04-15T08:20:00Z',
-    favorite: true,
-  },
-];
-
 export default function LeftSidebar({
-  recentFiles = sampleSGFFiles, // 임시 데이터로 기본값 설정
+  recentFiles,
   onFileClick,
   onToggleFavorite,
   isCollapsed,
   onToggle,
   currentFileId,
 }: {
-  recentFiles?: SGFFile[];
+  recentFiles: SGFFile[];
   onFileClick: (file: SGFFile) => void;
   onToggleFavorite?: (file: SGFFile) => void;
   isCollapsed: boolean;
@@ -50,12 +39,9 @@ export default function LeftSidebar({
 }) {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = React.useState<'recent' | 'favorite'>('recent');
-
-  // 강제로 샘플 파일을 사용하지 않고 실제 파일 목록 사용
-  const filesToDisplay = recentFiles && recentFiles.length > 0 ? recentFiles : [];
   
   // 즐겨찾기 목록
-  const favoriteFiles = filesToDisplay.filter(file => file.favorite);
+  const favoriteFiles = recentFiles.filter(file => file.favorite);
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
@@ -194,15 +180,15 @@ export default function LeftSidebar({
                 {activeTab === 'recent' ? '내 SGF 파일' : '즐겨찾기'}
               </h3>
               <span className="text-xs text-gray-400">
-                {activeTab === 'recent' ? filesToDisplay.length : favoriteFiles.length}개 파일
+                {activeTab === 'recent' ? recentFiles.length : favoriteFiles.length}개 파일
               </span>
             </div>
             
             <div className="bg-white rounded-lg shadow-sm overflow-hidden flex-grow">
               <div className="overflow-y-auto h-[calc(100vh-220px)] custom-scrollbar">
-                {(activeTab === 'recent' ? filesToDisplay : favoriteFiles).length > 0 ? (
+                {(activeTab === 'recent' ? recentFiles : favoriteFiles).length > 0 ? (
                   <ul className="divide-y divide-gray-100">
-                    {(activeTab === 'recent' ? filesToDisplay : favoriteFiles).map((file) => (
+                    {(activeTab === 'recent' ? recentFiles : favoriteFiles).map((file) => (
                       <li
                         key={file.id}
                         className={`hover:bg-blue-50 transition-colors cursor-pointer ${currentFileId === file.id ? 'bg-blue-100' : ''}`}

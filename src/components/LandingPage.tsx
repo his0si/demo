@@ -299,10 +299,13 @@ const LandingPage: React.FC = () => {
                 &quot;그때 그 한 수가 어땠더라...&quot; 이제 더 이상 흐릿한 기억이나 바래진 종이 기보에 의존하지 마세요. 
                 소중한 기보들이 언제든 쉽게 찾아볼 수 있는 디지털 자산으로 영원히 보존됩니다.
               </p>
-              <div className="w-full h-[200px] bg-gray-50 rounded-xl relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-gray-400 text-sm">종이 기보에서 디지털 기보로 변환 이미지</p>
-                </div>
+              <div className="w-full h-[200px] rounded-xl relative overflow-hidden">
+                <Image
+                  src="/images/landing1.png"
+                  alt="종이 기보에서 디지털 기보로 변환"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
               </div>
             </motion.div>
 
@@ -323,10 +326,13 @@ const LandingPage: React.FC = () => {
                 단순히 기보를 저장하는 것을 넘어, 각 국면의 깊은 의미를 AI가 분석하여 제공합니다.
                 당신의 기보가 가진 이야기를 더 풍부하게 이해할 수 있습니다.
               </p>
-              <div className="w-full h-[200px] bg-gray-50 rounded-xl relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-gray-400 text-sm">AI 분석을 통한 통찰력 제공 이미지</p>
-                </div>
+              <div className="w-full h-[200px] rounded-xl relative overflow-hidden bg-gray-50">
+                <Image
+                  src="/images/landing2.png"
+                  alt="AI 분석을 통한 통찰력 제공"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
               </div>
             </motion.div>
           </div>

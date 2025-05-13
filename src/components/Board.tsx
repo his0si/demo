@@ -36,8 +36,8 @@ export default function Board({
   onMarkerClick = () => {}
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const width = 500;
-  const height = 500;
+  const width = 650;
+  const height = 650;
   const stoneRadius = Math.min(width / size, height / size) / 2;
   
   useEffect(() => {

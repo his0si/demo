@@ -247,38 +247,40 @@ export default function GameBoard() {
     );
   }
 
-  return (
-    <div className="flex flex-col">
-      <NavBar />
-      <div className="flex gap-4">
-        <LeftSidebar
-          recentFiles={sgfFiles}
-          onFileClick={handleLoadSGF}
-          onToggleFavorite={handleToggleFavorite}
-          onDeleteFile={handleDeleteFile}
-          isCollapsed={isSidebarCollapsed}
-          onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
-          currentFileId={currentSGFFile?.id}
-        />
-        <div className="flex-1">
-          <div className="container mx-auto p-4 flex flex-col">
-            {/* 점수 표시 (상단) */}
-            <GameControls
-              currentPlayer={currentPlayer}
-              blackScore={blackScore}
-              whiteScore={whiteScore}
-              blackTerritory={blackTerritory}
-              whiteTerritory={whiteTerritory}
-              isGameEnded={isGameEnded}
-              onPass={pass}
-              onUndo={undo}
-              onRedo={redo}
-              onSave={handleSaveSGF}
-              onLoad={importSGF}
-              type="score"
-            />
+return (
+  <div className="flex flex-col">
+    <NavBar />
+    <div className="flex gap-4">
+      <LeftSidebar
+        recentFiles={sgfFiles}
+        onFileClick={handleLoadSGF}
+        onToggleFavorite={handleToggleFavorite}
+        onDeleteFile={handleDeleteFile}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
+        currentFileId={currentSGFFile?.id}
+      />
+      <div className="flex-1">
+        {/* 컨테이너 크기 확대 */}
+        <div className="container mx-auto p-6 flex flex-col">
+          {/* 점수 표시 (상단) */}
+          <GameControls
+            currentPlayer={currentPlayer}
+            blackScore={blackScore}
+            whiteScore={whiteScore}
+            blackTerritory={blackTerritory}
+            whiteTerritory={whiteTerritory}
+            isGameEnded={isGameEnded}
+            onPass={pass}
+            onUndo={undo}
+            onRedo={redo}
+            onSave={handleSaveSGF}
+            onLoad={importSGF}
+            type="score"
+          />
 
-            {/* 바둑판 */}
+          {/* 바둑판 */}
+          <div className="my-4"> {/* 여백 추가 */}
             <Board
               size={19}
               boardState={boardState}
@@ -294,8 +296,10 @@ export default function GameBoard() {
               isMarkerMode={currentTool !== 'move'}
               onMarkerClick={handleMarkerClick}
             />
+          </div>
 
-            {/* 컨트롤 바 (하단) */}
+          {/* 컨트롤 바 (하단) */}
+          <div className="mt-4"> {/* 여백 추가 */}
             <GameControls
               currentPlayer={currentPlayer}
               blackScore={blackScore}
@@ -312,31 +316,32 @@ export default function GameBoard() {
               selectedTool={currentTool}
               type="controls"
             />
-
-            {/* 게임 종료 메시지 (최하단) */}
-            <GameControls
-              currentPlayer={currentPlayer}
-              blackScore={blackScore}
-              whiteScore={whiteScore}
-              blackTerritory={blackTerritory}
-              whiteTerritory={whiteTerritory}
-              isGameEnded={isGameEnded}
-              onPass={pass}
-              onUndo={undo}
-              onRedo={redo}
-              onSave={handleSaveSGF}
-              onLoad={importSGF}
-              type="game-end"
-            />
           </div>
+
+          {/* 게임 종료 메시지 (최하단) */}
+          <GameControls
+            currentPlayer={currentPlayer}
+            blackScore={blackScore}
+            whiteScore={whiteScore}
+            blackTerritory={blackTerritory}
+            whiteTerritory={whiteTerritory}
+            isGameEnded={isGameEnded}
+            onPass={pass}
+            onUndo={undo}
+            onRedo={redo}
+            onSave={handleSaveSGF}
+            onLoad={importSGF}
+            type="game-end"
+          />
         </div>
-        <RightSidebar 
-          comment={comment}
-          setComment={setComment}
-          gameRef={gameRef}
-          gameTree={gameRef.current?.getGameTree()}
-        />
       </div>
+      <RightSidebar 
+        comment={comment}
+        setComment={setComment}
+        gameRef={gameRef}
+        gameTree={gameRef.current?.getGameTree()}
+      />
     </div>
-  );
+  </div>
+);
 }

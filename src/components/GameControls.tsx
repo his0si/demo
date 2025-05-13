@@ -164,50 +164,51 @@ export default function GameControls({
               <PencilIcon className="w-6 h-6" />
             </button>
             
-            {/* 마커 도구 팝업 - 그룹 호버로 변경 및 연결 영역 추가 */}
+            {/* 마커 도구 팝업 - 위치 조정 */}
             <div 
-              className="hidden group-hover:flex absolute bottom-full left-1/2 transform -translate-x-1/2 mb-0 flex-col"
+              className="hidden group-hover:flex absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 flex-col"
+              style={{ zIndex: 50 }}
             >
               {/* 투명한 연결 영역 */}
               <div className="h-2 w-full"></div>
               
               {/* 마커 버튼 컨테이너 - 미니멀 스타일로 변경 */}
-              <div className="bg-white p-3 rounded-lg flex gap-3 shadow-md">
+              <div className="bg-white p-2.5 rounded-lg flex gap-2 shadow-md">
                 <button 
                   onClick={() => onSelectTool?.(selectedTool === 'cross' ? 'move' : 'cross')} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${selectedTool === 'cross' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'cross' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                 >
-                  <span className="text-lg font-bold">X</span>
+                  <span className="text-base font-bold">X</span>
                 </button>
                 <button 
                   onClick={() => onSelectTool?.(selectedTool === 'triangle' ? 'move' : 'triangle')} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${selectedTool === 'triangle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'triangle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                 >
-                  <span className="text-lg">△</span>
+                  <span className="text-base">△</span>
                 </button>
                 <button 
                   onClick={() => onSelectTool?.(selectedTool === 'square' ? 'move' : 'square')} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${selectedTool === 'square' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'square' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                 >
-                  <span className="text-lg">□</span>
+                  <span className="text-base">□</span>
                 </button>
                 <button 
                   onClick={() => onSelectTool?.(selectedTool === 'circle' ? 'move' : 'circle')} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${selectedTool === 'circle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'circle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                 >
-                  <span className="text-lg">○</span>
+                  <span className="text-base">○</span>
                 </button>
                 <button 
                   onClick={() => onSelectTool?.(selectedTool === 'letter' ? 'move' : 'letter')} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${selectedTool === 'letter' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'letter' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                 >
-                  <span className="text-lg font-bold">A</span>
+                  <span className="text-base font-bold">A</span>
                 </button>
                 <button 
                   onClick={() => onSelectTool?.(selectedTool === 'number' ? 'move' : 'number')} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${selectedTool === 'number' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'number' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                 >
-                  <span className="text-lg font-bold">1</span>
+                  <span className="text-base font-bold">1</span>
                 </button>
               </div>
             </div>

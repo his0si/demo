@@ -248,9 +248,9 @@ export default function GameBoard() {
   }
 
 return (
-  <div className="flex flex-col">
+  <div className="flex flex-col h-screen overflow-hidden">
     <NavBar />
-    <div className="flex gap-4">
+    <div className="flex flex-1 overflow-hidden">
       <LeftSidebar
         recentFiles={sgfFiles}
         onFileClick={handleLoadSGF}
@@ -260,9 +260,8 @@ return (
         onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
         currentFileId={currentSGFFile?.id}
       />
-      <div className="flex-1">
-        {/* 컨테이너 크기 확대 */}
-        <div className="container mx-auto p-6 flex flex-col">
+      <div className="flex-1 flex items-center justify-center overflow-hidden">
+        <div className="max-w-3xl w-full flex flex-col items-center px-4">
           {/* 점수 표시 (상단) */}
           <GameControls
             currentPlayer={currentPlayer}
@@ -280,7 +279,7 @@ return (
           />
 
           {/* 바둑판 */}
-          <div className="my-4"> {/* 여백 추가 */}
+          <div className="my-4 flex justify-center">
             <Board
               size={19}
               boardState={boardState}
@@ -299,7 +298,7 @@ return (
           </div>
 
           {/* 컨트롤 바 (하단) */}
-          <div className="mt-4"> {/* 여백 추가 */}
+          <div className="mt-2 w-full">
             <GameControls
               currentPlayer={currentPlayer}
               blackScore={blackScore}
@@ -319,20 +318,22 @@ return (
           </div>
 
           {/* 게임 종료 메시지 (최하단) */}
-          <GameControls
-            currentPlayer={currentPlayer}
-            blackScore={blackScore}
-            whiteScore={whiteScore}
-            blackTerritory={blackTerritory}
-            whiteTerritory={whiteTerritory}
-            isGameEnded={isGameEnded}
-            onPass={pass}
-            onUndo={undo}
-            onRedo={redo}
-            onSave={handleSaveSGF}
-            onLoad={importSGF}
-            type="game-end"
-          />
+          <div className="w-full">
+            <GameControls
+              currentPlayer={currentPlayer}
+              blackScore={blackScore}
+              whiteScore={whiteScore}
+              blackTerritory={blackTerritory}
+              whiteTerritory={whiteTerritory}
+              isGameEnded={isGameEnded}
+              onPass={pass}
+              onUndo={undo}
+              onRedo={redo}
+              onSave={handleSaveSGF}
+              onLoad={importSGF}
+              type="game-end"
+            />
+          </div>
         </div>
       </div>
       <RightSidebar 
@@ -343,5 +344,4 @@ return (
       />
     </div>
   </div>
-);
-}
+);}

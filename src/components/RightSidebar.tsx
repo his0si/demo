@@ -38,23 +38,23 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
 
   return (
     <motion.aside 
-      className="w-64 border-l border-gray-200 bg-gray-50 min-h-screen flex flex-col"
+      className="w-64 border-l border-gray-200 bg-gray-50 h-[calc(100vh-64px)] flex flex-col overflow-hidden"
       initial={{ x: 20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      {/* 게임 트리 영역 */}
-      <div className="h-[44%] border-b border-gray-200">
-        <div className="h-full p-4">
+      {/* 게임 트리 영역 - 비율 조정 */}
+      <div className="h-[45%] border-b border-gray-200 overflow-hidden">
+        <div className="h-full p-4 flex flex-col">
           <div className="flex items-center mb-3">
             <DocumentTextIcon className="w-5 h-5 text-blue-500 mr-2" />
             <h3 className="text-md font-semibold text-gray-700">게임 트리</h3>
           </div>
           
-          <div className="h-[calc(100%-2rem)] bg-white rounded-lg p-3 overflow-hidden">
+          <div className="bg-white rounded-lg p-2 flex-1 overflow-hidden">
             {gameTree ? (
               <div className="h-full overflow-auto custom-scrollbar">
-                <div className="h-full min-w-[150px] overflow-x-auto">
+                <div className="min-w-[150px] overflow-x-auto">
                   <GameTreeManager
                     gameTree={gameTree}
                     onNodeClick={(nodeId) => {
@@ -76,24 +76,22 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
         </div>
       </div>
 
-      {/* Boardmatcher 영역 */}
-      <div className="h-[12%] border-b border-gray-200">
-        <div className="p-4">
+      {/* Boardmatcher 영역 - 높이 줄임 */}
+      <div className="h-[15%] border-b border-gray-200 overflow-hidden">
+        <div className="p-4 h-full flex flex-col">
           <div className="flex items-center mb-2">
             <PuzzlePieceIcon className="w-5 h-5 text-green-500 mr-2" />
             <h3 className="text-md font-semibold text-gray-700">바둑 개념 학습</h3>
           </div>
           
-          <div className="bg-white rounded-lg p-3 h-[calc(100%-2rem)]">
-            <div className="flex items-center justify-center h-full text-center">
-              <p className="text-gray-500 text-sm">연관된 개념이 없습니다.</p>
-            </div>
+          <div className="bg-white rounded-lg p-2 flex-1 flex items-center justify-center">
+            <p className="text-gray-500 text-sm">연관된 개념이 없습니다.</p>
           </div>
         </div>
       </div>
 
       {/* Comment 영역 */}
-      <div className="flex-1 p-4 flex flex-col">
+      <div className="flex-1 p-4 flex flex-col overflow-hidden">
         <div className="flex items-center mb-2">
           <ChatBubbleBottomCenterTextIcon className="w-5 h-5 text-amber-500 mr-2" />
           <h3 className="text-md font-semibold text-gray-700">메모</h3>
@@ -105,7 +103,6 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
             onChange={(e) => handleCommentChange(e.target.value)}
             className="w-full flex-1 p-2 rounded text-gray-700 resize-none border-none focus:ring-0 focus:outline-none custom-scrollbar"
             placeholder="현재 수에 대한 메모를 입력하세요..."
-            style={{ minHeight: '100px' }}
           />
         </div>
       </div>

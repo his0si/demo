@@ -205,42 +205,47 @@ export default function LeftSidebar({
 
   return (
     <motion.aside 
-      className={`${isCollapsed ? 'w-16' : 'w-72'} p-4 border-r bg-gray-50 flex flex-col min-h-screen transition-all duration-300`}
+      className={`${isCollapsed ? 'w-16' : 'w-72'} p-4 border-r bg-gray-50 flex flex-col h-[calc(100vh-64px)] overflow-hidden transition-all duration-300`}
       initial={false}
     >
       {isCollapsed ? (
         // 축소된 상태 - 수직 중앙정렬
-        <div className="flex flex-col items-center gap-4">
-          <button
-            onClick={onToggle}
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center"
-            aria-label="펼치기"
-          >
-            <ChevronDoubleRightIcon className="w-5 h-5 text-gray-400" />
-          </button>
-          
-          {status === "authenticated" && session?.user && (
-            <div className="relative">
-              <Image
-                src={session.user.image || '/images/default_profile.png'}
-                alt="avatar"
-                width={40}
-                height={40}
-                className="rounded-full border-2 border-white shadow-sm"
-              />
-            </div>
-          )}
+        <div className="flex flex-col items-center justify-between h-full">
+          <div>
+            <button
+              onClick={onToggle}
+              className="p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center mb-4"
+              aria-label="펼치기"
+            >
+              <ChevronDoubleRightIcon className="w-5 h-5 text-gray-400" />
+            </button>
+            
+            {status === "authenticated" && session?.user && (
+              <div className="relative mb-4">
+                <Image
+                  src={session.user.image || '/images/default_profile.png'}
+                  alt="avatar"
+                  width={40}
+                  height={40}
+                  className="rounded-full border-2 border-white shadow-sm"
+                />
+              </div>
+            )}
+          </div>
           
           {/* 접힌 상태에서도 아이콘 표시 */}
-          <div className="mt-8 flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-6">
             <DocumentIcon className="w-6 h-6 text-blue-500" />
             <StarIcon className="w-6 h-6 text-yellow-400" />
             <FolderIcon className="w-6 h-6 text-gray-500" />
           </div>
+          
+          {/* 빈 공간 추가 */}
+          <div></div>
         </div>
       ) : (
-        // 확장된 상태 - 개선된 레이아웃
-        <>
+        // 확장된 상태
+        <div className="flex flex-col h-full overflow-hidden">
           <div className="flex justify-between items-center mb-6">
             {/* 제목 자리에 프로필을 위치시킴 */}
             {status === "authenticated" && session?.user ? (
@@ -272,10 +277,10 @@ export default function LeftSidebar({
             </button>
           </div>
 
-          <div className="border-b mb-6"></div>
+          <div className="border-b mb-4"></div>
 
           {/* 탭 네비게이션 */}
-          <div className="flex mb-4 border-b">
+          <div className="flex mb-3 border-b">
             <button 
               className={`flex-1 py-2 text-sm font-medium text-center ${activeTab === 'recent' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
               onClick={() => setActiveTab('recent')}
@@ -293,9 +298,9 @@ export default function LeftSidebar({
             </button>
           </div>
 
-          {/* SGF 파일 목록 - 개선된 디자인 */}
-          <div className="flex-grow overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          {/* SGF 파일 목록 - 높이 조정 */}
+          <div className="flex-grow flex flex-col">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
                 {activeTab === 'recent' ? '내 SGF 파일' : '즐겨찾기'}
               </h3>
@@ -304,8 +309,8 @@ export default function LeftSidebar({
               </span>
             </div>
             
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden flex-grow">
-              <div className="overflow-y-auto h-[calc(100vh-220px)] custom-scrollbar">
+            <div className="bg-white rounded-lg shadow-sm flex-grow overflow-hidden">
+              <div className="h-full overflow-y-auto custom-scrollbar">
                 {(activeTab === 'recent' ? recentFiles : favoriteFiles).length > 0 ? (
                   <ul className="divide-y divide-gray-100">
                     {(activeTab === 'recent' ? recentFiles : favoriteFiles).map((file) => (
@@ -384,7 +389,7 @@ export default function LeftSidebar({
               onCancel={handleCancelDelete}
             />
           )}
-        </>
+        </div>
       )}
 
       <style jsx>{`

@@ -262,6 +262,7 @@ export default function GameBoard() {
         />
         <div className="flex-1">
           <div className="container mx-auto p-4 flex flex-col">
+            {/* 점수 표시 (상단) */}
             <GameControls
               currentPlayer={currentPlayer}
               blackScore={blackScore}
@@ -273,14 +274,11 @@ export default function GameBoard() {
               onUndo={undo}
               onRedo={redo}
               onSave={handleSaveSGF}
-              onLoad={() => {
-                importSGF();
-                // 파일 불러오기 후 목록 다시 로드
-                setTimeout(loadSgfFileList, 1000);
-              }}
-              showOnlyControlButtons={true}
+              onLoad={importSGF}
+              type="score"
             />
 
+            {/* 바둑판 */}
             <Board
               size={19}
               boardState={boardState}
@@ -297,6 +295,7 @@ export default function GameBoard() {
               onMarkerClick={handleMarkerClick}
             />
 
+            {/* 컨트롤 바 (하단) */}
             <GameControls
               currentPlayer={currentPlayer}
               blackScore={blackScore}
@@ -311,9 +310,10 @@ export default function GameBoard() {
               onLoad={importSGF}
               onSelectTool={setCurrentTool}
               selectedTool={currentTool}
-              showOnlyToolButtons={true}
+              type="controls"
             />
 
+            {/* 게임 종료 메시지 (최하단) */}
             <GameControls
               currentPlayer={currentPlayer}
               blackScore={blackScore}
@@ -326,7 +326,7 @@ export default function GameBoard() {
               onRedo={redo}
               onSave={handleSaveSGF}
               onLoad={importSGF}
-              showOnlyScoreBoxes={true}
+              type="game-end"
             />
           </div>
         </div>

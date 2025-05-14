@@ -19,6 +19,8 @@ interface GameControlsProps {
   blackTerritory: number; 
   whiteTerritory: number;
   isGameEnded: boolean;
+  onGoToStart?: () => void;
+  onGoToEnd?: () => void;
   onPass: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -37,6 +39,8 @@ export default function GameControls({
   blackTerritory,
   whiteTerritory,
   isGameEnded,
+  onGoToStart,
+  onGoToEnd,
   onPass,
   onUndo,
   onRedo,
@@ -111,7 +115,7 @@ export default function GameControls({
       <div className="p-4 mt-6">
         <div className="flex justify-center items-center gap-6">
           {/* 맨 앞으로 */}
-          <button className="p-2 text-black hover:bg-gray-100 rounded-full transition">
+          <button onClick={onGoToStart} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
             <ChevronDoubleLeftIcon className="w-6 h-6" />
           </button>
           
@@ -126,7 +130,7 @@ export default function GameControls({
           </button>
           
           {/* 맨 뒤로 */}
-          <button className="p-2 text-black hover:bg-gray-100 rounded-full transition">
+          <button onClick={onGoToEnd} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
             <ChevronDoubleRightIcon className="w-6 h-6" />
           </button>
           

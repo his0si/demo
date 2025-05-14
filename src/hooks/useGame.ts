@@ -95,6 +95,39 @@ export default function useGame() {
     return success;
   }, [isGameEnded, updateGameState]);
   
+  // 맨 앞으로 이동 (첫 번째 수로)
+const goToStart = useCallback(() => {
+  if (!gameRef.current) return;
+  
+  // root 노드로 이동
+  const gameTree = gameRef.current.getGameTree();
+  if (gameTree) {
+    gameRef.current.navigateToNode('root');
+    updateGameState();
+  }
+}, [updateGameState]);
+
+// 맨 뒤로 이동 (마지막 수로)
+const goToEnd = useCallback(() => {
+  if (!gameRef.current) return;
+  
+  const gameTree = gameRef.current.getGameTree();
+  if (!gameTree) return;
+  
+  // 현재 노드부터 시작해서 가장 마지막 자식 노드까지 이동
+  let currentNode = gameRef.current.getCurrentNode();
+  
+  // 메인 패스 따라 마지막 노드까지 이동
+  while (currentNode && currentNode.children.length > 0) {
+    // 항상 첫 번째 자식을 선택 (메인 라인)
+    currentNode = gameTree.get(currentNode.children[0].id);
+    if (currentNode) {
+      gameRef.current.navigateToNode(currentNode.id);
+    }
+  }
+  
+  updateGameState();
+}, [updateGameState]);
   // 패스
   const pass = useCallback(() => {
     if (!gameRef.current || isGameEnded) return;
@@ -252,6 +285,8 @@ export default function useGame() {
     markers,
     comment,
     makeMove,
+    goToStart,
+    goToEnd,
     pass,
     undo,
     redo,

@@ -32,6 +32,8 @@ export default function GameBoard() {
     importSGF,
     claimTerritory,
     startGame,
+    goToStart,
+    goToEnd,
     game,
     comment,
     setComment,
@@ -306,6 +308,8 @@ return (
               blackTerritory={blackTerritory}
               whiteTerritory={whiteTerritory}
               isGameEnded={isGameEnded}
+              onGoToStart={goToStart}
+              onGoToEnd={goToEnd}
               onPass={pass}
               onUndo={undo}
               onRedo={redo}

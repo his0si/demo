@@ -92,10 +92,15 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
           <div></div> {/* 하단 공간 */}
         </div>
       ) : (
-        // 펼친 상태 UI
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* 접기 버튼 추가 */}
-          <div className="flex justify-end p-2">
+        // 펼친 상태 UI - 최소 높이 설정 추가
+        <div className="flex flex-col h-full overflow-y-auto">
+          {/* 헤더 영역 - 고정 높이 */}
+          <div className="flex justify-between items-center p-4 pb-2 flex-shrink-0">
+            <div className="flex items-center">
+              <DocumentTextIcon className="w-5 h-5 text-blue-500 mr-2" />
+              <h3 className="text-md font-semibold text-gray-700">게임 트리</h3>
+            </div>
+            
             <button
               onClick={() => setIsCollapsed(true)}
               className="hover:bg-gray-200 rounded-full transition-colors p-1.5"
@@ -105,52 +110,45 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
             </button>
           </div>
 
-          {/* 게임 트리 영역 */}
-          <div className="h-[55%] border-b border-gray-200 overflow-hidden">
-            <div className="h-full p-4 pt-0 flex flex-col">
-              <div className="flex items-center mb-3">
-                <DocumentTextIcon className="w-5 h-5 text-blue-500 mr-2" />
-                <h3 className="text-md font-semibold text-gray-700">게임 트리</h3>
-              </div>
-              
-              <div className="bg-white rounded-lg p-2 flex-1 overflow-hidden">
-                {gameTree ? (
-                  <div className="h-full overflow-auto custom-scrollbar bg-white">
-                    <div className="relative min-w-[180px]">
-                      <GameTreeManager
-                        gameTree={gameTree}
-                        onNodeClick={handleNodeClick}
-                        gridSize={30}
-                      />
-                    </div>
+          {/* 게임 트리 영역 - 최소 높이 설정 */}
+          <div className="border-b border-gray-200 overflow-hidden px-4 pt-0 pb-4 flex-shrink-0" style={{ height: '50%', minHeight: '250px' }}>
+            <div className="bg-white rounded-lg p-2 h-full overflow-hidden">
+              {gameTree ? (
+                <div className="h-full overflow-auto custom-scrollbar bg-white">
+                  <div className="relative min-w-[180px]">
+                    <GameTreeManager
+                      gameTree={gameTree}
+                      onNodeClick={handleNodeClick}
+                      gridSize={30}
+                    />
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <p className="text-gray-500 text-sm">
-                      아직 게임이 시작되지 않았습니다.
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <p className="text-gray-500 text-sm">
+                    아직 게임이 시작되지 않았습니다.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Boardmatcher 영역 */}
-          <div className="h-[10%] border-b border-gray-200 overflow-hidden">
+          {/* 바둑 개념 학습 영역 - 최소 높이 설정 */}
+          <div className="border-b border-gray-200 overflow-hidden flex-shrink-0" style={{ height: '15%', minHeight: '120px' }}>
             <div className="p-4 h-full flex flex-col">
               <div className="flex items-center mb-2">
                 <PuzzlePieceIcon className="w-5 h-5 text-green-500 mr-2" />
                 <h3 className="text-md font-semibold text-gray-700">바둑 개념 학습</h3>
               </div>
               
-              <div className="bg-white rounded-lg p-1 flex-1 flex items-center justify-center">
+              <div className="bg-white rounded-lg p-2 flex-1 flex items-center justify-center">
                 <p className="text-gray-500 text-sm">연관된 개념이 없습니다.</p>
               </div>
             </div>
           </div>
 
-          {/* Comment 영역 */}
-          <div className="flex-1 p-4 flex flex-col overflow-hidden">
+          {/* 메모 영역 - 최소 높이 설정 */}
+          <div className="p-4 flex flex-col overflow-hidden flex-shrink-0" style={{ height: '35%', minHeight: '150px' }}>
             <div className="flex items-center mb-3">
               <ChatBubbleBottomCenterTextIcon className="w-5 h-5 text-amber-500 mr-2" />
               <h3 className="text-md font-semibold text-gray-700">메모</h3>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { motion } from "framer-motion";
@@ -124,11 +124,17 @@ export default function LeftSidebar({
   const [activeTab, setActiveTab] = React.useState<'recent' | 'favorite'>('recent');
   const [fileToDelete, setFileToDelete] = useState<SGFFile | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const userToggleRef = useRef<boolean>(false);
   
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
+      
+      if (userToggleRef.current) {
+        userToggleRef.current = false;
+        return;
+      }
       
       if (mobile && !isCollapsed) {
         onToggle();
@@ -141,7 +147,12 @@ export default function LeftSidebar({
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, [isCollapsed, onToggle]);
-  
+
+  const handleToggleClick = () => {
+    userToggleRef.current = true;
+    onToggle();
+  };
+
   const favoriteFiles = recentFiles.filter(file => file.favorite);
 
   const formatDate = (dateString: string) => {
@@ -227,7 +238,7 @@ export default function LeftSidebar({
         <div className="flex flex-col items-center justify-between h-full">
           <div>
             <button
-              onClick={onToggle}
+              onClick={handleToggleClick}
               className="p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center mb-4"
               aria-label="펼치기"
             >
@@ -278,7 +289,7 @@ export default function LeftSidebar({
             )}
             
             <button
-              onClick={onToggle}
+              onClick={handleToggleClick}
               className="hover:bg-gray-200 rounded-full transition-colors p-1.5"
               aria-label="사이드바 접기"
             >

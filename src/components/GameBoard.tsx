@@ -20,10 +20,19 @@ export default function GameBoard() {
   // 반응형 디자인을 위한 상태
   const [isMobileView, setIsMobileView] = useState(false);
 
+  // 중요: 사용자가 직접 사이드바를 열고 닫는 액션 추적용 ref
+  const userToggleRef = useRef(false);
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobileView(mobile);
+      
+      // 사용자가 직접 토글한 경우는 자동 조정 건너뛰기
+      if (userToggleRef.current) {
+        userToggleRef.current = false;
+        return;
+      }
       
       // 모바일 뷰일 때 자동 사이드바 접기
       if (mobile && !isSidebarCollapsed) {
@@ -43,6 +52,12 @@ export default function GameBoard() {
       window.removeEventListener('resize', handleResize);
     };
   }, [isSidebarCollapsed]);
+
+  // 사이드바 토글 핸들러 - 사용자 액션 표시
+  const handleSidebarToggle = useCallback(() => {
+    userToggleRef.current = true;
+    setIsSidebarCollapsed(prev => !prev);
+  }, []);
 
   const {
     isGameEnded,
@@ -286,7 +301,7 @@ export default function GameBoard() {
           onToggleFavorite={handleToggleFavorite}
           onDeleteFile={handleDeleteFile}
           isCollapsed={isSidebarCollapsed}
-          onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
+          onToggle={handleSidebarToggle}
           currentFileId={currentSGFFile?.id}
         />
         <div className={`flex-1 flex items-center justify-center overflow-hidden ${isMobileView ? 'px-1' : 'px-4'}`}>

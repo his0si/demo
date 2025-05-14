@@ -120,14 +120,16 @@ const goToEnd = useCallback(() => {
   // 메인 패스 따라 마지막 노드까지 이동
   while (currentNode && currentNode.children.length > 0) {
     // 항상 첫 번째 자식을 선택 (메인 라인)
-    currentNode = gameTree.get(currentNode.children[0].id);
-    if (currentNode) {
-      gameRef.current.navigateToNode(currentNode.id);
-    }
+    const nextNode = gameTree.get(currentNode.children[0].id);
+    if (!nextNode) break; // 다음 노드가 없으면 중단
+    
+    currentNode = nextNode;
+    gameRef.current.navigateToNode(currentNode.id);
   }
   
   updateGameState();
 }, [updateGameState]);
+
   // 패스
   const pass = useCallback(() => {
     if (!gameRef.current || isGameEnded) return;

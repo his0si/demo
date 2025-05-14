@@ -11,7 +11,7 @@ import {
   ChevronDoubleLeftIcon
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 
 export interface GameState {
   comment: string;
@@ -33,6 +33,10 @@ interface RightSidebarProps {
 export default function RightSidebar({ comment, setComment, gameRef, gameTree }: RightSidebarProps) {
   // 사이드바 접기/펼치기 상태 관리
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // 게임 트리 컨테이너 참조 추가
+  const treeContainerRef = useRef<HTMLDivElement>(null);
+  // 현재 선택된 노드 ID 참조
+  const currentNodeIdRef = useRef<string | undefined>(gameTree?.currentNodeId);
   
   // 화면 크기 감지 및 자동 접기
   useEffect(() => {
@@ -65,6 +69,27 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
       gameRef.current.navigateToNode(nodeId);
     }
   }, [gameRef]);
+
+  // 현재 노드가 변경될 때마다 해당 노드로 스크롤
+  useEffect(() => {
+    if (!gameTree || !treeContainerRef.current) return;
+
+    // 현재 노드 ID가 변경된 경우에만 스크롤
+    if (currentNodeIdRef.current !== gameTree.currentNodeId) {
+      currentNodeIdRef.current = gameTree.currentNodeId;
+      
+      // 약간의 지연을 주어 노드 렌더링 후 스크롤하도록 함
+      setTimeout(() => {
+        const selectedNode = treeContainerRef.current?.querySelector(`[data-node-id="${gameTree.currentNodeId}"]`);
+        if (selectedNode) {
+          selectedNode.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 100);
+    }
+  }, [gameTree, gameTree?.currentNodeId]);
 
   return (
     <motion.aside 
@@ -114,7 +139,10 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
           <div className="border-b border-gray-200 overflow-hidden px-4 pt-0 pb-4 flex-shrink-0" style={{ height: '50%', minHeight: '250px' }}>
             <div className="bg-white rounded-lg p-2 h-full overflow-hidden">
               {gameTree ? (
-                <div className="h-full overflow-auto custom-scrollbar bg-white">
+                <div 
+                  ref={treeContainerRef}
+                  className="h-full overflow-auto custom-scrollbar bg-white"
+                >
                   <div className="relative min-w-[180px]">
                     <GameTreeManager
                       gameTree={gameTree}

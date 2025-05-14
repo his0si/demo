@@ -22,7 +22,10 @@ export default function GameTreeNode({
   const hasComment = node.data.comment && node.data.comment.trim().length > 0;
   
   return (
-    <g transform={`translate(${x}, ${y})`}>
+    <g 
+      transform={`translate(${x}, ${y})`}
+      data-node-id={node.id}  // 노드 ID 추가
+    >
       {/* 루트 노드는 마름모꼴로 표시 */}
       {isRoot ? (
         <>

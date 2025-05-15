@@ -82,6 +82,23 @@ export default function GameControls({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 마커 모달이 열려있을 때 외부 클릭 감지하여 닫기
+  useEffect(() => {
+    if (!showMarkerModal) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.marker-modal') && !target.closest('.marker-toggle-btn')) {
+        setShowMarkerModal(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMarkerModal]);
+
   // 점수 표시 영역 렌더링 함수 - 반응형 개선
   if (type === 'score') {
     return (
@@ -207,32 +224,33 @@ export default function GameControls({
           <div className="relative">
             <button 
               onClick={() => setShowMarkerModal(!showMarkerModal)}
-              className={`p-1.5 sm:p-2 ${selectedTool && selectedTool !== 'move' ? 'bg-gray-100' : 'hover:bg-gray-100'} rounded-full transition text-black cursor-pointer relative`}
+              className={`marker-toggle-btn p-1.5 sm:p-2 ${selectedTool && selectedTool !== 'move' ? 'bg-gray-100' : 'hover:bg-gray-100'} rounded-full transition text-black cursor-pointer relative`}
               title="마커 도구 선택"
             >
               <PencilSimple weight="regular" size={viewportState.isMobile ? 18 : viewportState.isTablet ? 20 : 24} />
             </button>
             
-            {/* 마커 도구 팝업 - 위치 조정 */}
+            {/* 마커 도구 팝업 - 애니메이션 및 디자인 개선 */}
             {showMarkerModal && (
               <div 
-                className={`absolute ${viewportState.isMobile ? 'right-0' : 'left-1/2 transform -translate-x-1/2'} bottom-full mb-2`}
-                style={{ zIndex: 50 }}
+                className="marker-modal absolute bottom-full mb-3 right-0"
+                style={{ 
+                  zIndex: 50,
+                  transform: 'translateX(10%)',
+                  animation: 'fadeIn 0.15s ease-out' 
+                }}
               >
-                <div className={`
-                  bg-white p-2 rounded-lg flex gap-1 sm:gap-2 shadow-md border border-gray-200
-                  ${viewportState.isMobile ? 'flex-col' : ''}
-                `}>
-                  {/* 마커 버튼들 */}
+                <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200 flex flex-col gap-2.5 min-w-[48px]">
+                  {/* 마커 버튼들 - 디자인 통일 */}
                   <button 
                     onClick={() => {
                       onSelectTool?.(selectedTool === 'cross' ? 'move' : 'cross');
                       setShowMarkerModal(false);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'cross' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md cursor-pointer ${selectedTool === 'cross' ? 'bg-gray-200 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                     title="X 마커"
                   >
-                    <X weight="bold" size={viewportState.isMobile ? 15 : 18} />
+                    <X weight="bold" size={18} />
                   </button>
                   
                   <button 
@@ -240,10 +258,10 @@ export default function GameControls({
                       onSelectTool?.(selectedTool === 'triangle' ? 'move' : 'triangle');
                       setShowMarkerModal(false);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'triangle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md cursor-pointer ${selectedTool === 'triangle' ? 'bg-gray-200 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                     title="삼각형 마커"
                   >
-                    <Triangle weight="bold" size={viewportState.isMobile ? 15 : 18} />
+                    <Triangle weight="bold" size={18} />
                   </button>
                   
                   <button 
@@ -251,10 +269,10 @@ export default function GameControls({
                       onSelectTool?.(selectedTool === 'square' ? 'move' : 'square');
                       setShowMarkerModal(false);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'square' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md cursor-pointer ${selectedTool === 'square' ? 'bg-gray-200 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                     title="사각형 마커"
                   >
-                    <Square weight="bold" size={viewportState.isMobile ? 15 : 18} />
+                    <Square weight="bold" size={18} />
                   </button>
                   
                   <button 
@@ -262,10 +280,10 @@ export default function GameControls({
                       onSelectTool?.(selectedTool === 'circle' ? 'move' : 'circle');
                       setShowMarkerModal(false);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'circle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md cursor-pointer ${selectedTool === 'circle' ? 'bg-gray-200 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                     title="원형 마커"
                   >
-                    <Circle weight="bold" size={viewportState.isMobile ? 15 : 18} />
+                    <Circle weight="bold" size={18} />
                   </button>
                   
                   <button 
@@ -273,10 +291,10 @@ export default function GameControls({
                       onSelectTool?.(selectedTool === 'letter' ? 'move' : 'letter'); 
                       setShowMarkerModal(false);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'letter' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md cursor-pointer ${selectedTool === 'letter' ? 'bg-gray-200 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                     title="알파벳 마커"
                   >
-                    <TextAUnderline weight="bold" size={viewportState.isMobile ? 15 : 18} />
+                    <TextAUnderline weight="bold" size={18} />
                   </button>
                   
                   <button 
@@ -284,17 +302,12 @@ export default function GameControls({
                       onSelectTool?.(selectedTool === 'number' ? 'move' : 'number');
                       setShowMarkerModal(false);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'number' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md cursor-pointer ${selectedTool === 'number' ? 'bg-gray-200 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
                     title="숫자 마커"
                   >
-                    <NumberOne weight="bold" size={viewportState.isMobile ? 15 : 18} />
+                    <NumberOne weight="bold" size={18} />
                   </button>
                 </div>
-                
-                {/* 화살표 - 모바일에서는 위치 조정 */}
-                {!viewportState.isMobile && (
-                  <div className="w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-200 absolute -bottom-2 left-1/2 -translate-x-1/2"></div>
-                )}
               </div>
             )}
           </div>

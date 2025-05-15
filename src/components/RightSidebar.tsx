@@ -44,13 +44,34 @@ export default function RightSidebar({
   const treeContainerRef = useRef<HTMLDivElement>(null);
   // 현재 선택된 노드 ID 참조
   const currentNodeIdRef = useRef<string | undefined>(gameTree?.currentNodeId);
+  // 사용자가 직접 토글 버튼을 클릭한 경우를 추적하기 위한 ref
+  const userToggleRef = useRef<boolean>(false);
+  
+  // 토글 버튼 클릭 핸들러
+  const handleToggleClick = useCallback(() => {
+    userToggleRef.current = true;
+    onToggle();
+    // 200ms 후에 사용자 액션 플래그 초기화
+    setTimeout(() => {
+      userToggleRef.current = false;
+    }, 200);
+  }, [onToggle]);
   
   // 화면 크기 감지 및 자동 접기
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024; // lg 브레이크포인트
+      
+      // 사용자가 직접 토글한 경우 자동 접기를 적용하지 않음
+      if (userToggleRef.current) {
+        return;
+      }
+      
       if (mobile && !isCollapsed) {
         onToggle();
+      } else if (!mobile && isCollapsed) {
+        // 모바일 화면이 아니고 접혀있는 상태라면 펼침 (선택 사항)
+        // onToggle();
       }
     };
     
@@ -109,7 +130,7 @@ export default function RightSidebar({
         // 접힌 상태 UI
         <div className="flex flex-col items-center justify-between h-full py-4">
           <button
-            onClick={onToggle}
+            onClick={handleToggleClick}
             className="p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center mb-4"
             aria-label="펼치기"
           >
@@ -136,7 +157,7 @@ export default function RightSidebar({
             </div>
             
             <button
-              onClick={onToggle}
+              onClick={handleToggleClick}
               className="hover:bg-gray-200 rounded-full transition-colors p-1.5"
               aria-label="사이드바 접기"
             >

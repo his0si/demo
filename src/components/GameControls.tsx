@@ -99,48 +99,48 @@ export default function GameControls({
     };
   }, [showMarkerModal]);
 
-  // 점수 표시 영역 렌더링 함수 - 반응형 개선
+  // 점수 표시 영역 렌더링 함수
   if (type === 'score') {
     return (
       <div className="w-full flex justify-center mb-2">
         <div className={`
-          flex items-center justify-center py-2
-          ${viewportState.isMobile ? 'scale-90 transform' : ''}
+          flex items-center justify-center py-1.5
+          ${viewportState.isMobile ? 'scale-85 transform' : 'scale-90 transform'}
         `}>
           {/* 흑 점수 */}
-          <div className="flex items-center mr-2 sm:mr-4">
-            <div className="bg-gray-100 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center">
-              <span className="font-medium text-xs sm:text-sm">
+          <div className="flex items-center mr-1.5 sm:mr-3">
+            <div className="bg-gray-100 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center">
+              <span className="font-medium text-xs sm:text-xs">
                 {isGameEnded ? blackScore + blackTerritory : blackScore}
               </span>
             </div>
           </div>
           
           {/* 흑 레이블 */}
-          <div className="text-sm sm:text-base font-bold mr-1 sm:mr-2">
+          <div className="text-xs sm:text-sm font-bold mr-1">
             Black
           </div>
           
-          <div className="relative w-14 h-8 mx-1 sm:w-16 sm:h-10 sm:mx-2">
+          <div className="relative w-12 h-7 mx-1 sm:w-14 sm:h-8 sm:mx-1.5">
             {/* 흑 원 */}
-            <div className={`absolute w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black transition-all duration-300 ${
+            <div className={`absolute w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black transition-all duration-300 ${
               currentPlayer === Stone.Black ? 'z-10 left-0 top-0' : 'z-0 left-0 top-0'
             }`} />
             {/* 백 원 */}
-            <div className={`absolute w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border-2 border-black transition-all duration-300 ${
-              currentPlayer === Stone.White ? 'z-10 left-6 sm:left-7 top-0' : 'z-0 left-6 sm:left-7 top-0'
+            <div className={`absolute w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border-2 border-black transition-all duration-300 ${
+              currentPlayer === Stone.White ? 'z-10 left-5 sm:left-6 top-0' : 'z-0 left-5 sm:left-6 top-0'
             }`} />
           </div>
           
           {/* 백 레이블 */}
-          <div className="text-sm sm:text-base font-bold ml-1 sm:ml-2">
+          <div className="text-xs sm:text-sm font-bold ml-1">
             White
           </div>
           
           {/* 백 점수 */}
-          <div className="flex items-center ml-2 sm:ml-4">
-            <div className="bg-gray-100 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center">
-              <span className="font-medium text-xs sm:text-sm">
+          <div className="flex items-center ml-1.5 sm:ml-3">
+            <div className="bg-gray-100 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center">
+              <span className="font-medium text-xs sm:text-xs">
                 {isGameEnded ? whiteScore + whiteTerritory : whiteScore}
               </span>
             </div>
@@ -153,14 +153,14 @@ export default function GameControls({
   // 게임 종료 알림 영역 렌더링 함수 (하단에 표시) - 반응형 개선
   if (type === 'game-end' && isGameEnded) {
     return (
-      <div className="w-full text-center mt-2 p-2 sm:p-3 bg-yellow-100 rounded">
+      <div className="w-full text-center mt-2 p-2 sm:p-3 bg-yellow-100 rounded mb-4 sm:mb-5">
         <p className="text-sm sm:text-base">게임이 종료되었습니다.</p>
         <p className="text-sm sm:text-base">돌을 클릭하여 영역을 확인하세요.</p>
       </div>
     );
   }
   
-  // 메인 컨트롤 바 렌더링 (하단에 표시) - 반응형 개선
+  // 메인 컨트롤 바 렌더링 (하단에 표시) - 반응형 개선 & 하단 여백 추가
   if (type === 'controls') {
     return (
       <div className="w-full mt-3">

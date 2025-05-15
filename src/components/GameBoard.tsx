@@ -318,11 +318,11 @@ export default function GameBoard() {
           {/* 게임 컨트롤과 바둑판을 하나의 단위로 통합 */}
           <div className={`
             w-full h-full flex flex-col justify-center items-center 
-            ${viewportSize.isMobile ? 'px-1' : viewportSize.isTablet ? 'px-2' : 'px-4'}
+            ${viewportSize.isMobile ? 'px-1 py-6' : viewportSize.isTablet ? 'px-2 py-12' : 'px-4 py-20'}
           `}>
             <div className="w-full max-w-3xl flex flex-col items-center">
               {/* 상단 점수 표시 영역 */}
-              <div className="w-full mb-1">
+              <div className="w-full mt-15">
                 <GameControls
                   currentPlayer={currentPlayer}
                   blackScore={blackScore}
@@ -340,7 +340,7 @@ export default function GameBoard() {
               </div>
               
               {/* 바둑판 영역 - 적절한 크기로 조정 */}
-              <div className="w-full flex justify-center mb-1">
+              <div className="w-full flex justify-center">
                 <Board
                   size={19}
                   boardState={boardState}
@@ -360,7 +360,7 @@ export default function GameBoard() {
               </div>
               
               {/* 하단 컨트롤 영역 */}
-              <div className="w-full">
+              <div className="w-full mb-15">
                 <GameControls
                   currentPlayer={currentPlayer}
                   blackScore={blackScore}

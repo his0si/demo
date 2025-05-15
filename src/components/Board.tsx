@@ -37,29 +37,47 @@ export default function Board({
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 650, height: 650 });
+  const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
   
-  // 화면 크기에 따라 바둑판 크기 조정
+  // 화면 크기에 따라 바둑판 크기 조정 (개선)
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
-        // 최대 크기 제한
-        const maxSize = Math.min(
-          containerRef.current.clientWidth,
-          // 컨테이너 높이에서 컨트롤 버튼 등을 고려해 여유 공간 확보
-          window.innerHeight - 240
+        // 컨테이너의 크기를 최대한 활용
+        const containerWidth = containerRef.current.clientWidth;
+        const availableHeight = window.innerHeight - 180; // 상단 네비바, 점수, 컨트롤바 고려
+        
+        // 정사각형 유지를 위해 작은 값 사용
+        const size = Math.min(
+          containerWidth, 
+          availableHeight,
+          800 // 최대 한계값
         );
         
-        // 최소 크기 보장
-        const boardSize = Math.max(400, Math.min(maxSize, 650));
-        
-        setDimensions({ width: boardSize, height: boardSize });
+        // 최소 크기 보장 (모바일에서도 너무 작아지지 않도록)
+        const finalSize = Math.max(320, size);
+        setDimensions({ width: finalSize, height: finalSize });
       }
     };
     
     updateSize();
+    
+    // ResizeObserver를 사용하여 컨테이너 크기 변화 감지
+    const resizeObserver = new ResizeObserver(entries => {
+      if (entries.length > 0) {
+        updateSize();
+      }
+    });
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      resizeObserver.disconnect();
+    };
   }, []);
   
   const stoneRadius = Math.min(dimensions.width / size, dimensions.height / size) / 2;
@@ -403,13 +421,13 @@ export default function Board({
   }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, dimensions, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete, isMarkerMode, onMarkerClick]);
   
   return (
-    <div ref={containerRef} className="w-full flex justify-center">
+    <div ref={containerRef} className="w-full flex justify-center items-center">
       <svg 
         ref={svgRef} 
         width={dimensions.width} 
         height={dimensions.height}
         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-        className="mx-auto border rounded shadow-md"
+        className="mx-auto border border-gray-300 rounded shadow-md"
       />
     </div>
   );

@@ -16,47 +16,84 @@ export default function GameBoard() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sgfFiles, setSgfFiles] = useState<SGFFile[]>([]);
   const [currentSGFFile, setCurrentSGFFile] = useState<SGFFile | null>(null);
+  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
 
   // 반응형 디자인을 위한 상태
-  const [isMobileView, setIsMobileView] = useState(false);
-
-  // 중요: 사용자가 직접 사이드바를 열고 닫는 액션 추적용 ref
+  const [boardSize, setBoardSize] = useState(0);
+  const boardContainerRef = useRef<HTMLDivElement>(null);
   const userToggleRef = useRef(false);
+
+  // 반응형 상태 감지 (모바일, 태블릿, 데스크탑)
+  const [viewportSize, setViewportSize] = useState({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true
+  });
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobileView(mobile);
+      const width = window.innerWidth;
+      const isMobile = width < 768;
+      const isTablet = width >= 768 && width < 1280;
+      const isDesktop = width >= 1280;
       
-      // 사용자가 직접 토글한 경우는 자동 조정 건너뛰기
-      if (userToggleRef.current) {
-        userToggleRef.current = false;
-        return;
+      setViewportSize({ isMobile, isTablet, isDesktop });
+      
+      // 사이드바 자동 조정 (사용자 토글이 아닌 경우)
+      if (!userToggleRef.current) {
+        if (isMobile) {
+          setIsSidebarCollapsed(true);
+          setIsRightSidebarCollapsed(true);
+        } else if (isTablet) {
+          setIsSidebarCollapsed(true);
+          setIsRightSidebarCollapsed(false);
+        } else {
+          setIsSidebarCollapsed(false);
+          setIsRightSidebarCollapsed(false);
+        }
       }
       
-      // 모바일 뷰일 때 자동 사이드바 접기
-      if (mobile && !isSidebarCollapsed) {
-        setIsSidebarCollapsed(true);
-      }
-      // 데스크톱 뷰일 때 자동 사이드바 펼치기
-      else if (!mobile && isSidebarCollapsed) {
-        setIsSidebarCollapsed(false);
-      }
+      // 바둑판 크기 계산
+      calculateBoardSize();
     };
     
-    // 초기 로드와 리사이즈에 대응
+    // 바둑판 크기를 동적으로 계산하는 함수
+    const calculateBoardSize = () => {
+      if (!boardContainerRef.current) return;
+      
+      const containerWidth = boardContainerRef.current.clientWidth;
+      const containerHeight = window.innerHeight - 140; // 네비게이션 바와 여백 고려
+      
+      // 정사각형 크기로 설정 (컨테이너 내부에서 최대한 크게)
+      const maxSize = Math.min(containerWidth * 0.95, containerHeight * 0.75);
+      setBoardSize(Math.floor(maxSize));
+    };
+    
+    // 초기 실행 및 이벤트 리스너 등록
     handleResize();
     window.addEventListener('resize', handleResize);
     
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [isSidebarCollapsed]);
+  }, []);
 
-  // 사이드바 토글 핸들러 - 사용자 액션 표시
+  // 사이드바 토글 핸들러
   const handleSidebarToggle = useCallback(() => {
     userToggleRef.current = true;
     setIsSidebarCollapsed(prev => !prev);
+    // 토글 후 타이머로 사용자 액션 플래그 초기화
+    setTimeout(() => {
+      userToggleRef.current = false;
+    }, 200);
+  }, []);
+
+  const handleRightSidebarToggle = useCallback(() => {
+    userToggleRef.current = true;
+    setIsRightSidebarCollapsed(prev => !prev);
+    setTimeout(() => {
+      userToggleRef.current = false;
+    }, 200);
   }, []);
 
   const {
@@ -85,23 +122,17 @@ export default function GameBoard() {
 
   const gameRef = useRef<Game | null>(null);
 
-  // SGF 파일 목록 로드 - 명시적으로 즉시 로드 후 상태 업데이트
+  // SGF 파일 목록 로드
   const loadSgfFileList = useCallback(() => {
-    console.log('로컬 스토리지에서 SGF 파일 목록 로드 중...');
     const files = sgfStorage.getAll();
-    console.log('로드된 SGF 파일:', files.length, '개');
     setSgfFiles(files);
   }, []);
 
-  // 컴포넌트 마운트 시 및 필요할 때 SGF 파일 목록 로드
   useEffect(() => {
-    // 초기 로드
     loadSgfFileList();
-
-    // 로컬 스토리지 변경 감지
+    
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'goggle-sgf-files') {
-        console.log('로컬 스토리지 변경 감지됨');
         loadSgfFileList();
       }
     };
@@ -192,7 +223,6 @@ export default function GameBoard() {
     const sgf = gameRef.current.saveSGF();
     if (sgf) {
       try {
-        // 파일 이름 생성 (현재 날짜/시간 기반)
         const now = new Date();
         const year = String(now.getFullYear()).slice(-2);
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -201,15 +231,10 @@ export default function GameBoard() {
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
 
-        // 파일 저장 (브라우저 다운로드)
         const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
         FileSaver.saveAs(blob, fileName);
 
-        // 로컬 저장소에도 저장
         const savedFile = sgfStorage.saveSGF(fileName, sgf);
-        console.log('SGF 파일 저장됨:', fileName);
-
-        // 파일 목록 상태 갱신 - 바로 갱신하는 방식 사용
         loadSgfFileList();
         setCurrentSGFFile(savedFile);
 
@@ -224,27 +249,16 @@ export default function GameBoard() {
   // SGF 파일 불러오기 함수
   const handleLoadSGF = useCallback((file: SGFFile) => {
     try {
-      console.log(`SGF 파일 로드 시작: ${file.name} (ID: ${file.id})`);
-      // 파일 내용 가져오기
       const sgfContent = sgfStorage.getSGFContent(file.id);
       if (!sgfContent) {
         alert('SGF 파일 내용을 불러올 수 없습니다.');
         return;
       }
 
-      // 게임에 SGF 적용
       loadSGF(sgfContent);
-
-      // 열어본 시간 업데이트
       sgfStorage.updateOpenedTime(file.id);
-
-      // 현재 선택된 파일 설정
       setCurrentSGFFile(file);
-
-      // 사이드바 파일 목록 갱신 - 데이터 새로 불러오기
       loadSgfFileList();
-
-      console.log(`SGF 파일을 불러왔습니다: ${file.name}`);
     } catch (error) {
       console.error('SGF 로드 중 오류 발생:', error);
       alert('SGF 파일을 불러오는 중 오류가 발생했습니다.');
@@ -254,29 +268,19 @@ export default function GameBoard() {
   // 즐겨찾기 토글 핸들러
   const handleToggleFavorite = useCallback((file: SGFFile) => {
     sgfStorage.toggleFavorite(file.id);
-    // 상태 즉시 갱신
     loadSgfFileList();
   }, [loadSgfFileList]);
 
-  // 파일 삭제 핸들러 추가
+  // 파일 삭제 핸들러
   const handleDeleteFile = useCallback((file: SGFFile) => {
     try {
-      console.log(`SGF 파일 삭제 시작: ${file.name} (ID: ${file.id})`);
-
-      // 현재 선택된 파일을 삭제하는 경우
       if (currentSGFFile && currentSGFFile.id === file.id) {
-        // 새 게임 시작
         startGame();
         setCurrentSGFFile(null);
       }
 
-      // 스토리지에서 파일 삭제
       sgfStorage.deleteSGF(file.id);
-
-      // 파일 목록 갱신
       loadSgfFileList();
-
-      console.log(`SGF 파일 삭제 완료: ${file.name}`);
     } catch (error) {
       console.error('SGF 파일 삭제 중 오류 발생:', error);
       alert('파일 삭제 중 오류가 발생했습니다.');
@@ -295,6 +299,7 @@ export default function GameBoard() {
     <div className="flex flex-col h-screen overflow-hidden">
       <NavBar />
       <div className="flex flex-1 overflow-hidden">
+        {/* 왼쪽 사이드바 */}
         <LeftSidebar
           recentFiles={sgfFiles}
           onFileClick={handleLoadSGF}
@@ -304,89 +309,109 @@ export default function GameBoard() {
           onToggle={handleSidebarToggle}
           currentFileId={currentSGFFile?.id}
         />
-        <div className={`flex-1 flex items-center justify-center overflow-hidden ${isMobileView ? 'px-1' : 'px-4'}`}>
-          <div className={`${isMobileView ? 'w-full' : 'max-w-3xl w-full'} flex flex-col items-center`}>
-            {/* 점수 표시 (상단) */}
-            <GameControls
-              currentPlayer={currentPlayer}
-              blackScore={blackScore}
-              whiteScore={whiteScore}
-              blackTerritory={blackTerritory}
-              whiteTerritory={whiteTerritory}
-              isGameEnded={isGameEnded}
-              onPass={pass}
-              onUndo={undo}
-              onRedo={redo}
-              onSave={handleSaveSGF}
-              onLoad={importSGF}
-              type="score"
-            />
-
-            {/* 바둑판 */}
-            <div className={`my-2 ${isMobileView ? 'scale-90 origin-top' : 'my-4'} flex justify-center`}>
-              <Board
-                size={19}
-                boardState={boardState}
-                lastMoveMarkers={game?.getCurrentAndNextMove()}
-                isGameEnded={isGameEnded}
-                onIntersectionClick={handleIntersectionClick}
-                markers={game?.getGameState()?.markers ?? []}
-                showDeleteConfirm={false}
-                deletePosition={null}
-                onDeleteClick={handleDeleteClick}
-                onConfirmDelete={() => {}}
-                onCancelDelete={() => {}}
-                isMarkerMode={currentTool !== 'move'}
-                onMarkerClick={handleMarkerClick}
-              />
-            </div>
-
-            {/* 컨트롤 바 (하단) */}
-            <div className={`mt-2 ${isMobileView ? 'w-[98%]' : 'w-full'}`}>
-              <GameControls
-                currentPlayer={currentPlayer}
-                blackScore={blackScore}
-                whiteScore={whiteScore}
-                blackTerritory={blackTerritory}
-                whiteTerritory={whiteTerritory}
-                isGameEnded={isGameEnded}
-                onGoToStart={goToStart}
-                onGoToEnd={goToEnd}
-                onPass={pass}
-                onUndo={undo}
-                onRedo={redo}
-                onSave={handleSaveSGF}
-                onLoad={importSGF}
-                onSelectTool={setCurrentTool}
-                selectedTool={currentTool}
-                type="controls"
-              />
-            </div>
-
-            {/* 게임 종료 메시지 (최하단) */}
-            <div className="w-full">
-              <GameControls
-                currentPlayer={currentPlayer}
-                blackScore={blackScore}
-                whiteScore={whiteScore}
-                blackTerritory={blackTerritory}
-                whiteTerritory={whiteTerritory}
-                isGameEnded={isGameEnded}
-                onPass={pass}
-                onUndo={undo}
-                onRedo={redo}
-                onSave={handleSaveSGF}
-                onLoad={importSGF}
-                type="game-end"
-              />
+        
+        {/* 게임 보드 섹션 - 메인 컨텐츠 */}
+        <div 
+          ref={boardContainerRef}
+          className="flex-1 flex flex-col items-center justify-center overflow-hidden"
+        >
+          {/* 게임 컨트롤과 바둑판을 하나의 단위로 통합 */}
+          <div className={`
+            w-full h-full flex flex-col justify-center items-center 
+            ${viewportSize.isMobile ? 'px-1' : viewportSize.isTablet ? 'px-2' : 'px-4'}
+          `}>
+            <div className="w-full max-w-3xl flex flex-col items-center">
+              {/* 상단 점수 표시 영역 */}
+              <div className="w-full mb-1">
+                <GameControls
+                  currentPlayer={currentPlayer}
+                  blackScore={blackScore}
+                  whiteScore={whiteScore}
+                  blackTerritory={blackTerritory}
+                  whiteTerritory={whiteTerritory}
+                  isGameEnded={isGameEnded}
+                  onPass={pass}
+                  onUndo={undo}
+                  onRedo={redo}
+                  onSave={handleSaveSGF}
+                  onLoad={importSGF}
+                  type="score"
+                />
+              </div>
+              
+              {/* 바둑판 영역 - 적절한 크기로 조정 */}
+              <div className="w-full flex justify-center mb-1">
+                <Board
+                  size={19}
+                  boardState={boardState}
+                  lastMoveMarkers={game?.getCurrentAndNextMove()}
+                  isGameEnded={isGameEnded}
+                  onIntersectionClick={handleIntersectionClick}
+                  markers={game?.getGameState()?.markers ?? []}
+                  showDeleteConfirm={false}
+                  deletePosition={null}
+                  onDeleteClick={handleDeleteClick}
+                  onConfirmDelete={() => {}}
+                  onCancelDelete={() => {}}
+                  isMarkerMode={currentTool !== 'move'}
+                  onMarkerClick={handleMarkerClick}
+                  boardSize={boardSize} // Pass boardSize to Board component
+                />
+              </div>
+              
+              {/* 하단 컨트롤 영역 */}
+              <div className="w-full">
+                <GameControls
+                  currentPlayer={currentPlayer}
+                  blackScore={blackScore}
+                  whiteScore={whiteScore}
+                  blackTerritory={blackTerritory}
+                  whiteTerritory={whiteTerritory}
+                  isGameEnded={isGameEnded}
+                  onGoToStart={goToStart}
+                  onGoToEnd={goToEnd}
+                  onPass={pass}
+                  onUndo={undo}
+                  onRedo={redo}
+                  onSave={handleSaveSGF}
+                  onLoad={importSGF}
+                  onSelectTool={setCurrentTool}
+                  selectedTool={currentTool}
+                  type="controls"
+                />
+              </div>
+              
+              {/* 게임 종료 메시지 (조건부 렌더링) */}
+              {isGameEnded && (
+                <div className="w-full mt-1">
+                  <GameControls
+                    currentPlayer={currentPlayer}
+                    blackScore={blackScore}
+                    whiteScore={whiteScore}
+                    blackTerritory={blackTerritory}
+                    whiteTerritory={whiteTerritory}
+                    isGameEnded={isGameEnded}
+                    onPass={pass}
+                    onUndo={undo}
+                    onRedo={redo}
+                    onSave={handleSaveSGF}
+                    onLoad={importSGF}
+                    type="game-end"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
+        
+        {/* 오른쪽 사이드바 */}
         <RightSidebar 
           comment={comment}
           setComment={setComment}
           gameRef={gameRef}
           gameTree={gameRef.current?.getGameTree()}
+          isCollapsed={isRightSidebarCollapsed}
+          onToggle={handleRightSidebarToggle}
         />
       </div>
     </div>

@@ -2,15 +2,22 @@
 
 import { Stone } from '@/lib/types';
 import { 
-  ChevronLeftIcon, 
-  ChevronRightIcon,
-  ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon,
-  ArrowDownTrayIcon,
-  FolderOpenIcon,
-  PencilIcon,
-  StopCircleIcon
-} from '@heroicons/react/24/outline';
+  CaretDoubleLeft, 
+  CaretLeft, 
+  CaretRight, 
+  CaretDoubleRight, 
+  DownloadSimple, 
+  FolderOpen, 
+  PencilSimple, 
+  StopCircle,
+  X,
+  Triangle,
+  Square,
+  Circle,
+  TextAUnderline,
+  NumberOne
+} from '@phosphor-icons/react';
+import { useState } from 'react';
 
 interface GameControlsProps {
   currentPlayer: Stone;
@@ -28,7 +35,6 @@ interface GameControlsProps {
   onLoad: () => void;
   onSelectTool?: (tool: string) => void;
   selectedTool?: string;
-  // 심플하게 단일 타입 속성으로 변경
   type: 'score' | 'controls' | 'game-end';
 }
 
@@ -50,6 +56,8 @@ export default function GameControls({
   selectedTool,
   type
 }: GameControlsProps) {
+  // 마커 모달 상태 관리
+  const [showMarkerModal, setShowMarkerModal] = useState(false);
 
   // 점수 표시 영역 렌더링 함수 - 크기 확대
   if (type === 'score') {
@@ -116,27 +124,27 @@ export default function GameControls({
         <div className="flex justify-center items-center gap-6">
           {/* 맨 앞으로 */}
           <button onClick={onGoToStart} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
-            <ChevronDoubleLeftIcon className="w-6 h-6" />
+            <CaretDoubleLeft weight="regular" size={24} />
           </button>
           
           {/* 이전 */}
           <button onClick={onUndo} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
-            <ChevronLeftIcon className="w-6 h-6" />
+            <CaretLeft weight="regular" size={24} />
           </button>
           
           {/* 다음 */}
           <button onClick={onRedo} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
-            <ChevronRightIcon className="w-6 h-6" />
+            <CaretRight weight="regular" size={24} />
           </button>
           
           {/* 맨 뒤로 */}
           <button onClick={onGoToEnd} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
-            <ChevronDoubleRightIcon className="w-6 h-6" />
+            <CaretDoubleRight weight="regular" size={24} />
           </button>
           
           {/* 게임 종료 (패스) */}
           <button onClick={onPass} disabled={isGameEnded} className="p-2 text-black hover:bg-gray-100 rounded-full transition disabled:opacity-50">
-            <StopCircleIcon className="w-6 h-6" />
+            <StopCircle weight="regular" size={24} />
           </button>
           
           {/* 구분선 */}
@@ -144,12 +152,12 @@ export default function GameControls({
           
           {/* 저장 */}
           <button onClick={onSave} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
-            <ArrowDownTrayIcon className="w-6 h-6" />
+            <DownloadSimple weight="regular" size={24} />
           </button>
           
           {/* 불러오기 */}
           <button onClick={onLoad} className="p-2 text-black hover:bg-gray-100 rounded-full transition">
-            <FolderOpenIcon className="w-6 h-6" />
+            <FolderOpen weight="regular" size={24} />
           </button>
           
           {/* AI 분석 */}
@@ -160,62 +168,97 @@ export default function GameControls({
           {/* 구분선 */}
           <div className="h-8 w-px bg-gray-200 mx-2"></div>
           
-          {/* 편집 도구 (마커) - 수정된 부분 */}
-          <div className="relative group">
+          {/* 편집 도구 (마커) - 개선된 부분 */}
+          <div className="relative">
+            {/* 클릭 시 모달 토글하는 방식으로 변경 + 커서 포인터 추가 */}
             <button 
-              className={`p-2 ${selectedTool && selectedTool !== 'move' ? 'bg-gray-100' : 'hover:bg-gray-100'} rounded-full transition text-black`}
+              onClick={() => setShowMarkerModal(!showMarkerModal)}
+              className={`p-2 ${selectedTool && selectedTool !== 'move' ? 'bg-gray-100' : 'hover:bg-gray-100'} rounded-full transition text-black cursor-pointer relative`}
+              title="마커 도구 선택"
             >
-              <PencilIcon className="w-6 h-6" />
+              <PencilSimple weight="regular" size={24} />
             </button>
             
-            {/* 마커 도구 팝업 - 위치 조정 */}
-            <div 
-              className="hidden group-hover:flex absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 flex-col"
-              style={{ zIndex: 50 }}
-            >
-              {/* 투명한 연결 영역 */}
-              <div className="h-2 w-full"></div>
-              
-              {/* 마커 버튼 컨테이너 - 미니멀 스타일로 변경 */}
-              <div className="bg-white p-2.5 rounded-lg flex gap-2 shadow-md">
-                <button 
-                  onClick={() => onSelectTool?.(selectedTool === 'cross' ? 'move' : 'cross')} 
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'cross' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
-                >
-                  <span className="text-base font-bold">X</span>
-                </button>
-                <button 
-                  onClick={() => onSelectTool?.(selectedTool === 'triangle' ? 'move' : 'triangle')} 
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'triangle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
-                >
-                  <span className="text-base">△</span>
-                </button>
-                <button 
-                  onClick={() => onSelectTool?.(selectedTool === 'square' ? 'move' : 'square')} 
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'square' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
-                >
-                  <span className="text-base">□</span>
-                </button>
-                <button 
-                  onClick={() => onSelectTool?.(selectedTool === 'circle' ? 'move' : 'circle')} 
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'circle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
-                >
-                  <span className="text-base">○</span>
-                </button>
-                <button 
-                  onClick={() => onSelectTool?.(selectedTool === 'letter' ? 'move' : 'letter')} 
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'letter' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
-                >
-                  <span className="text-base font-bold">A</span>
-                </button>
-                <button 
-                  onClick={() => onSelectTool?.(selectedTool === 'number' ? 'move' : 'number')} 
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${selectedTool === 'number' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
-                >
-                  <span className="text-base font-bold">1</span>
-                </button>
+            {/* 마커 도구 팝업 - 표시 조건 변경 */}
+            {showMarkerModal && (
+              <div 
+                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2"
+                style={{ zIndex: 50 }}
+              >
+                {/* 마커 버튼 컨테이너 */}
+                <div className="bg-white p-2.5 rounded-lg flex gap-2 shadow-md border border-gray-200">
+                  <button 
+                    onClick={() => {
+                      onSelectTool?.(selectedTool === 'cross' ? 'move' : 'cross');
+                      setShowMarkerModal(false);
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'cross' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    title="X 마커"
+                  >
+                    <X weight="bold" size={18} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      onSelectTool?.(selectedTool === 'triangle' ? 'move' : 'triangle');
+                      setShowMarkerModal(false);
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'triangle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    title="삼각형 마커"
+                  >
+                    <Triangle weight="bold" size={18} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      onSelectTool?.(selectedTool === 'square' ? 'move' : 'square');
+                      setShowMarkerModal(false);
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'square' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    title="사각형 마커"
+                  >
+                    <Square weight="bold" size={18} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      onSelectTool?.(selectedTool === 'circle' ? 'move' : 'circle');
+                      setShowMarkerModal(false);
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'circle' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    title="원형 마커"
+                  >
+                    <Circle weight="bold" size={18} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      onSelectTool?.(selectedTool === 'letter' ? 'move' : 'letter'); 
+                      setShowMarkerModal(false);
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'letter' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    title="알파벳 마커"
+                  >
+                    <TextAUnderline weight="bold" size={18} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      onSelectTool?.(selectedTool === 'number' ? 'move' : 'number');
+                      setShowMarkerModal(false);
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer ${selectedTool === 'number' ? 'bg-gray-100 text-black font-bold' : 'hover:bg-gray-100 text-black'}`}
+                    title="숫자 마커"
+                  >
+                    <NumberOne weight="bold" size={18} />
+                  </button>
+                </div>
+                
+                {/* 화살표 추가하여 모달의 방향을 표시 */}
+                <div className="w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-200 absolute -bottom-2 left-1/2 -translate-x-1/2"></div>
               </div>
-            </div>
+            )}
+            
           </div>
         </div>
       </div>

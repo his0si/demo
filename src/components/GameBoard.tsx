@@ -61,12 +61,24 @@ export default function GameBoard() {
     const calculateBoardSize = () => {
       if (!boardContainerRef.current) return;
       
+      // 컨테이너 영역 측정
       const containerWidth = boardContainerRef.current.clientWidth;
-      const containerHeight = window.innerHeight - 140; // 네비게이션 바와 여백 고려
       
-      // 정사각형 크기로 설정 (컨테이너 내부에서 최대한 크게)
-      const maxSize = Math.min(containerWidth * 0.95, containerHeight * 0.75);
-      setBoardSize(Math.floor(maxSize));
+      // 네비게이션 바 높이(48px) + 상단 컨트롤 높이(약 60px) + 하단 컨트롤 높이(약 60px) + 여백(20px)
+      // 실제 사용 가능한 높이를 더 정확하게 계산
+      const navbarHeight = 48;
+      const controlHeight = 120;
+      const padding = 20;
+      const availableHeight = window.innerHeight - navbarHeight - controlHeight - padding;
+      
+      // 컨테이너 너비와 사용 가능한 높이 중 작은 값을 사용 (정사각형)
+      const maxSize = Math.min(containerWidth * 0.95, availableHeight * 0.95);
+      
+      // 최소 크기는 320px로 유지
+      const finalSize = Math.max(Math.floor(maxSize), 320);
+      
+      console.log('Calculated board size:', finalSize, 'Available height:', availableHeight);
+      setBoardSize(finalSize);
     };
     
     // 초기 실행 및 이벤트 리스너 등록
@@ -317,12 +329,12 @@ export default function GameBoard() {
         >
           {/* 게임 컨트롤과 바둑판을 하나의 단위로 통합 */}
           <div className={`
-            w-full h-full flex flex-col justify-center items-center 
-            ${viewportSize.isMobile ? 'px-1 py-6' : viewportSize.isTablet ? 'px-2 py-12' : 'px-4 py-20'}
+            w-full h-full flex flex-col justify-center items-center px-1
+            ${viewportSize.isMobile ? 'py-0' : 'py-0'}
           `}>
             <div className="w-full max-w-3xl flex flex-col items-center">
-              {/* 상단 점수 표시 영역 */}
-              <div className="w-full mt-15">
+              {/* 상단 점수 표시 영역 - 마진 축소 */}
+              <div className="w-full mb-1">
                 <GameControls
                   currentPlayer={currentPlayer}
                   blackScore={blackScore}
@@ -339,8 +351,8 @@ export default function GameBoard() {
                 />
               </div>
               
-              {/* 바둑판 영역 - 적절한 크기로 조정 */}
-              <div className="w-full flex justify-center">
+              {/* 바둑판 영역 */}
+              <div className="w-full flex justify-center my-1">
                 <Board
                   size={19}
                   boardState={boardState}
@@ -355,12 +367,12 @@ export default function GameBoard() {
                   onCancelDelete={() => {}}
                   isMarkerMode={currentTool !== 'move'}
                   onMarkerClick={handleMarkerClick}
-                  boardSize={boardSize} // Pass boardSize to Board component
+                  boardSize={boardSize}
                 />
               </div>
               
-              {/* 하단 컨트롤 영역 */}
-              <div className="w-full mb-15">
+              {/* 하단 컨트롤 영역 - 마진 축소 */}
+              <div className="w-full mt-1">
                 <GameControls
                   currentPlayer={currentPlayer}
                   blackScore={blackScore}
@@ -381,7 +393,7 @@ export default function GameBoard() {
                 />
               </div>
               
-              {/* 게임 종료 메시지 (조건부 렌더링) */}
+              {/* 게임 종료 메시지 */}
               {isGameEnded && (
                 <div className="w-full mt-1">
                   <GameControls

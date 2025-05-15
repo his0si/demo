@@ -102,9 +102,9 @@ export default function GameControls({
   // 점수 표시 영역 렌더링 함수
   if (type === 'score') {
     return (
-      <div className="w-full flex justify-center mb-2">
+      <div className="w-full flex justify-center mb-1">
         <div className={`
-          flex items-center justify-center py-1.5
+          flex items-center justify-center py-1
           ${viewportState.isMobile ? 'scale-85 transform' : 'scale-90 transform'}
         `}>
           {/* 흑 점수 */}
@@ -150,7 +150,7 @@ export default function GameControls({
     );
   }
   
-  // 게임 종료 알림 영역 렌더링 함수 (하단에 표시) - 반응형 개선
+  // 게임 종료 알림 영역 렌더링 함수 (하단에 표시)
   if (type === 'game-end' && isGameEnded) {
     return (
       <div className="w-full text-center mt-2 p-2 sm:p-3 bg-yellow-100 rounded mb-4 sm:mb-5">
@@ -160,13 +160,13 @@ export default function GameControls({
     );
   }
   
-  // 메인 컨트롤 바 렌더링 (하단에 표시) - 반응형 개선 & 하단 여백 추가
+  // 메인 컨트롤 바 렌더링 (하단에 표시)
   if (type === 'controls') {
     return (
-      <div className="w-full mt-3">
+      <div className="w-full mt-1">
         <div className={`
           flex justify-center items-center 
-          ${viewportState.isMobile ? 'gap-2 scale-90 transform' : viewportState.isTablet ? 'gap-4' : 'gap-6'}
+          ${viewportState.isMobile ? 'gap-1 scale-90 transform' : viewportState.isTablet ? 'gap-2' : 'gap-4'}
         `}>
           {/* 맨 앞으로 - 모바일에서는 숨김 */}
           {!viewportState.isMobile && (

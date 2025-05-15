@@ -18,6 +18,7 @@ interface BoardProps {
   onCancelDelete: () => void;
   isMarkerMode?: boolean;
   onMarkerClick?: (x: number, y: number) => void;
+  boardSize?: number;
 }
 
 export default function Board({ 
@@ -33,38 +34,44 @@ export default function Board({
   onConfirmDelete,
   onCancelDelete,
   isMarkerMode = false,
-  onMarkerClick = () => {}
+  onMarkerClick = () => {},
+  boardSize
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
-  
-  // 화면 크기에 따라 바둑판 크기 조정 (개선)
+
+  // 크기 업데이트 함수를 별도로 분리
+  const updateSize = () => {
+    if (!containerRef.current) return;
+    
+    const containerWidth = containerRef.current.clientWidth;
+    // 상단 컨트롤과 하단 컨트롤을 위한 공간 확보
+    const availableHeight = window.innerHeight - 180;
+    const size = Math.min(containerWidth, availableHeight, 800);
+    const finalSize = Math.max(320, size);
+    
+    console.log('Internal size calculation:', finalSize);
+    setDimensions({ width: finalSize, height: finalSize });
+  };
+
+  // 외부에서 전달받은 boardSize 처리
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        // 컨테이너의 크기를 최대한 활용
-        const containerWidth = containerRef.current.clientWidth;
-        const availableHeight = window.innerHeight - 180; // 상단 네비바, 점수, 컨트롤바 고려
-        
-        // 정사각형 유지를 위해 작은 값 사용
-        const size = Math.min(
-          containerWidth, 
-          availableHeight,
-          800 // 최대 한계값
-        );
-        
-        // 최소 크기 보장 (모바일에서도 너무 작아지지 않도록)
-        const finalSize = Math.max(320, size);
-        setDimensions({ width: finalSize, height: finalSize });
-      }
-    };
-    
-    updateSize();
-    
-    // ResizeObserver를 사용하여 컨테이너 크기 변화 감지
-    const resizeObserver = new ResizeObserver(entries => {
-      if (entries.length > 0) {
+    if (boardSize) {
+      console.log('Setting board dimensions from prop:', boardSize);
+      setDimensions({ width: boardSize, height: boardSize });
+    } else {
+      // boardSize prop이 없을 때만 내부 계산 사용
+      updateSize();
+    }
+  }, [boardSize]);
+  
+  // 동적 크기 조정 로직
+  useEffect(() => {
+    // ResizeObserver 등록
+    const resizeObserver = new ResizeObserver(() => {
+      // boardSize prop이 없을 때만 내부 크기 계산 적용
+      if (!boardSize) {
         updateSize();
       }
     });
@@ -73,12 +80,19 @@ export default function Board({
       resizeObserver.observe(containerRef.current);
     }
     
-    window.addEventListener('resize', updateSize);
+    const handleWindowResize = () => {
+      // boardSize prop이 없을 때만 내부 크기 계산 적용
+      if (!boardSize) {
+        updateSize();
+      }
+    };
+    
+    window.addEventListener('resize', handleWindowResize);
     return () => {
-      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('resize', handleWindowResize);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [boardSize]);
   
   const stoneRadius = Math.min(dimensions.width / size, dimensions.height / size) / 2;
   
@@ -420,8 +434,8 @@ export default function Board({
     
   }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, dimensions, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete, isMarkerMode, onMarkerClick]);
   
-  return (
-    <div ref={containerRef} className="w-full flex justify-center items-center">
+    return (
+    <div ref={containerRef} className="w-full flex justify-center items-center my-0">
       <svg 
         ref={svgRef} 
         width={dimensions.width} 

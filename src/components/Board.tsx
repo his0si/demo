@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import { Stone as StoneEnum, STONE_CLASSES } from '@/lib/types';
 
@@ -36,9 +36,33 @@ export default function Board({
   onMarkerClick = () => {}
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const width = 500;
-  const height = 500;
-  const stoneRadius = Math.min(width / size, height / size) / 2;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 650, height: 650 });
+  
+  // 화면 크기에 따라 바둑판 크기 조정
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        // 최대 크기 제한
+        const maxSize = Math.min(
+          containerRef.current.clientWidth,
+          // 컨테이너 높이에서 컨트롤 버튼 등을 고려해 여유 공간 확보
+          window.innerHeight - 240
+        );
+        
+        // 최소 크기 보장
+        const boardSize = Math.max(400, Math.min(maxSize, 650));
+        
+        setDimensions({ width: boardSize, height: boardSize });
+      }
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+  
+  const stoneRadius = Math.min(dimensions.width / size, dimensions.height / size) / 2;
   
   useEffect(() => {
     if (!svgRef.current || !boardState) return;
@@ -63,6 +87,9 @@ export default function Board({
     };
 
     const svg = d3.select(svgRef.current);
+    svg.attr('width', dimensions.width)
+       .attr('height', dimensions.height)
+       .attr('viewBox', `0 0 ${dimensions.width} ${dimensions.height}`);
     
     // 기존 요소 제거
     svg.selectAll('*').remove();
@@ -72,20 +99,20 @@ export default function Board({
       .append('pattern')
       .attr('id', 'wood')
       .attr('patternUnits', 'userSpaceOnUse')
-      .attr('width', width)
-      .attr('height', height)
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
       .append('image')
       .attr('xlink:href', '/images/board.png')
       .attr('x', 0)
       .attr('y', 0)
-      .attr('width', width)
-      .attr('height', height);
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height);
       
     svg.append('rect')
       .attr('x', 0)
       .attr('y', 0)
-      .attr('width', width)
-      .attr('height', height)
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
       .attr('fill', 'url(#wood)');
     
     // 눈금선 그리기
@@ -95,9 +122,9 @@ export default function Board({
     for (let i = 0; i < size; i++) {
       lines.append('line')
         .attr('x1', stoneRadius)
-        .attr('y1', stoneRadius + i * (height / size))
-        .attr('x2', width - stoneRadius)
-        .attr('y2', stoneRadius + i * (height / size))
+        .attr('y1', stoneRadius + i * (dimensions.height / size))
+        .attr('x2', dimensions.width - stoneRadius)
+        .attr('y2', stoneRadius + i * (dimensions.height / size))
         .attr('stroke', 'black')
         .attr('stroke-width', 1);
     }
@@ -105,10 +132,10 @@ export default function Board({
     // 세로선
     for (let i = 0; i < size; i++) {
       lines.append('line')
-        .attr('x1', stoneRadius + i * (width / size))
+        .attr('x1', stoneRadius + i * (dimensions.width / size))
         .attr('y1', stoneRadius)
-        .attr('x2', stoneRadius + i * (width / size))
-        .attr('y2', height - stoneRadius)
+        .attr('x2', stoneRadius + i * (dimensions.width / size))
+        .attr('y2', dimensions.height - stoneRadius)
         .attr('stroke', 'black')
         .attr('stroke-width', 1);
     }
@@ -124,8 +151,8 @@ export default function Board({
       
       handicapPoints.forEach(([x, y]) => {
         dots.append('circle')
-          .attr('cx', stoneRadius + x * (width / size))
-          .attr('cy', stoneRadius + y * (height / size))
+          .attr('cx', stoneRadius + x * (dimensions.width / size))
+          .attr('cy', stoneRadius + y * (dimensions.height / size))
           .attr('r', stoneRadius / 6)
           .attr('fill', 'black');
       });
@@ -150,8 +177,8 @@ export default function Board({
       .enter()
       .append('image')
       .attr('xlink:href', d => d.stone === StoneEnum.Black ? '/images/black_stone.svg' : '/images/white_stone.svg')
-      .attr('x', d => stoneRadius + d.xPos * (width / size) - stoneRadius)
-      .attr('y', d => stoneRadius + d.yPos * (height / size) - stoneRadius)
+      .attr('x', d => stoneRadius + d.xPos * (dimensions.width / size) - stoneRadius)
+      .attr('y', d => stoneRadius + d.yPos * (dimensions.height / size) - stoneRadius)
       .attr('width', stoneRadius * 2)
       .attr('height', stoneRadius * 2)
       .attr('class', d => `stone ${STONE_CLASSES[d.stone]}`);
@@ -162,8 +189,8 @@ export default function Board({
       const markerGroup = svg.append('g').attr('class', 'markers');
 
       normalizedMarkers.forEach(marker => {
-        const cx = stoneRadius + marker.x * (width / size);
-        const cy = stoneRadius + marker.y * (height / size);
+        const cx = stoneRadius + marker.x * (dimensions.width / size);
+        const cy = stoneRadius + marker.y * (dimensions.height / size);
 
         if (marker.type === 'circle') {
           markerGroup.append('circle')
@@ -235,10 +262,10 @@ export default function Board({
     for (let x = 0; x < size; x++) {
       for (let y = 0; y < size; y++) {
         overlay.append('rect')
-          .attr('x', x * (width / size))
-          .attr('y', y * (height / size))
-          .attr('width', width / size)
-          .attr('height', height / size)
+          .attr('x', x * (dimensions.width / size))
+          .attr('y', y * (dimensions.height / size))
+          .attr('width', dimensions.width / size)
+          .attr('height', dimensions.height / size)
           .attr('fill', 'transparent')
           .attr('data-x', x)
           .attr('data-y', y)
@@ -261,8 +288,8 @@ export default function Board({
     // 삭제 확인 UI
     if (showDeleteConfirm && deletePosition) {
       const { x, y } = deletePosition;
-      const cx = stoneRadius + x * (width / size);
-      const cy = stoneRadius + y * (height / size);
+      const cx = stoneRadius + x * (dimensions.width / size);
+      const cy = stoneRadius + y * (dimensions.height / size);
 
       // 삭제 확인 배경
       svg.append('rect')
@@ -312,8 +339,8 @@ export default function Board({
       const strokeColor = stone === StoneEnum.Black ? 'white' : 'black';
 
       svg.append('circle')
-        .attr('cx', stoneRadius + xPos * (width / size))
-        .attr('cy', stoneRadius + yPos * (height / size))
+        .attr('cx', stoneRadius + xPos * (dimensions.width / size))
+        .attr('cy', stoneRadius + yPos * (dimensions.height / size))
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-current')
         .attr('fill', strokeColor)
@@ -326,8 +353,8 @@ export default function Board({
       const strokeColor = stone === StoneEnum.Black ? 'white' : 'black';
 
       svg.append('circle')
-        .attr('cx', stoneRadius + xPos * (width / size))
-        .attr('cy', stoneRadius + yPos * (height / size))
+        .attr('cx', stoneRadius + xPos * (dimensions.width / size))
+        .attr('cy', stoneRadius + yPos * (dimensions.height / size))
         .attr('r', stoneRadius / 2.5)
         .attr('class', 'last-move-next')
         .attr('fill', strokeColor)
@@ -340,15 +367,15 @@ export default function Board({
       // (간소화 버전에서는 생략)
     }
     
-  }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete, isMarkerMode, onMarkerClick]);
+  }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, dimensions, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete, isMarkerMode, onMarkerClick]);
   
   return (
-    <div className="w-full flex justify-center">
+    <div ref={containerRef} className="w-full flex justify-center">
       <svg 
         ref={svgRef} 
-        width={width} 
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
+        width={dimensions.width} 
+        height={dimensions.height}
+        viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
         className="mx-auto border rounded shadow-md"
       />
     </div>

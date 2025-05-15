@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Game } from '@/lib/game';
 import { Stone, Intersection } from '@/lib/types';
+import { sgfStorage } from '@/lib/sgfStorage';
 
 export default function useGame() {
   const [comment, setComment] = useState('');
@@ -94,6 +95,41 @@ export default function useGame() {
     return success;
   }, [isGameEnded, updateGameState]);
   
+  // 맨 앞으로 이동 (첫 번째 수로)
+const goToStart = useCallback(() => {
+  if (!gameRef.current) return;
+  
+  // root 노드로 이동
+  const gameTree = gameRef.current.getGameTree();
+  if (gameTree) {
+    gameRef.current.navigateToNode('root');
+    updateGameState();
+  }
+}, [updateGameState]);
+
+// 맨 뒤로 이동 (마지막 수로)
+const goToEnd = useCallback(() => {
+  if (!gameRef.current) return;
+  
+  const gameTree = gameRef.current.getGameTree();
+  if (!gameTree) return;
+  
+  // 현재 노드부터 시작해서 가장 마지막 자식 노드까지 이동
+  let currentNode = gameRef.current.getCurrentNode();
+  
+  // 메인 패스 따라 마지막 노드까지 이동
+  while (currentNode && currentNode.children.length > 0) {
+    // 항상 첫 번째 자식을 선택 (메인 라인)
+    const nextNode = gameTree.get(currentNode.children[0].id);
+    if (!nextNode) break; // 다음 노드가 없으면 중단
+    
+    currentNode = nextNode;
+    gameRef.current.navigateToNode(currentNode.id);
+  }
+  
+  updateGameState();
+}, [updateGameState]);
+
   // 패스
   const pass = useCallback(() => {
     if (!gameRef.current || isGameEnded) return;
@@ -127,6 +163,7 @@ export default function useGame() {
 
   // SGF 불러오기
   const importSGF = useCallback(() => {
+    console.log('SGF 파일 불러오기 다이얼로그 실행');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.sgf';
@@ -137,10 +174,20 @@ export default function useGame() {
       const file = target.files?.[0];
       if (!file) return;
       
+      console.log(`선택된 SGF 파일: ${file.name}`);
       const reader = new FileReader();
       reader.onload = () => {
         const sgfContent = reader.result as string;
         loadSGF(sgfContent);
+        
+        // SGF 파일을 로컬 스토리지에도 저장
+        try {
+          const savedFile = sgfStorage.saveSGF(file.name, sgfContent);
+          console.log('SGF 파일이 저장되었습니다:', savedFile);
+          
+        } catch (error) {
+          console.error('SGF 저장 중 오류 발생:', error);
+        }
       };
       reader.readAsText(file);
     };
@@ -240,6 +287,8 @@ export default function useGame() {
     markers,
     comment,
     makeMove,
+    goToStart,
+    goToEnd,
     pass,
     undo,
     redo,

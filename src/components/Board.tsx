@@ -191,14 +191,21 @@ export default function Board({
       normalizedMarkers.forEach(marker => {
         const cx = stoneRadius + marker.x * (dimensions.width / size);
         const cy = stoneRadius + marker.y * (dimensions.height / size);
-
+        
+        // 해당 위치의 돌 색상 확인
+        const stoneAtPosition = boardState[marker.x]?.[marker.y]?.stone;
+        const isBlackStone = stoneAtPosition === StoneEnum.Black;
+        const isEmptySpace = stoneAtPosition === StoneEnum.None;
+        const markerColor = isBlackStone ? 'white' : 'black';
+        const strokeWidth = isBlackStone ? 2 : 1.5;
+        
         if (marker.type === 'circle') {
           markerGroup.append('circle')
             .attr('cx', cx)
             .attr('cy', cy)
             .attr('r', stoneRadius / 2.2)
-            .attr('stroke', 'red')
-            .attr('stroke-width', 2)
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth)
             .attr('fill', 'none');
         } else if (marker.type === 'square') {
           markerGroup.append('rect')
@@ -206,8 +213,8 @@ export default function Board({
             .attr('y', cy - stoneRadius / 2.2)
             .attr('width', stoneRadius / 1.1)
             .attr('height', stoneRadius / 1.1)
-            .attr('stroke', 'blue')
-            .attr('stroke-width', 2)
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth)
             .attr('fill', 'none');
         } else if (marker.type === 'triangle') {
           const path = d3.path();
@@ -218,8 +225,8 @@ export default function Board({
           path.closePath();
           markerGroup.append('path')
             .attr('d', path.toString())
-            .attr('stroke', 'green')
-            .attr('stroke-width', 2)
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth)
             .attr('fill', 'none');
         } else if (marker.type === 'cross') {
           markerGroup.append('line')
@@ -227,32 +234,58 @@ export default function Board({
             .attr('y1', cy - stoneRadius / 2)
             .attr('x2', cx + stoneRadius / 2)
             .attr('y2', cy + stoneRadius / 2)
-            .attr('stroke', 'yellow')
-            .attr('stroke-width', 2);
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth);
           markerGroup.append('line')
             .attr('x1', cx - stoneRadius / 2)
             .attr('y1', cy + stoneRadius / 2)
             .attr('x2', cx + stoneRadius / 2)
             .attr('y2', cy - stoneRadius / 2)
-            .attr('stroke', 'yellow')
-            .attr('stroke-width', 2);
-        } else if (marker.type === 'letter') {
-          markerGroup.append('text')
-            .attr('x', cx)
-            .attr('y', cy + 4)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', 18)
-            .attr('fill', 'purple')
-            .text(marker.label || 'A');
-        } else if (marker.type === 'number') {
-          markerGroup.append('text')
-            .attr('x', cx)
-            .attr('y', cy + 4)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', 18)
-            .attr('fill', 'purple')
-            .text(marker.label || '1');
-        }
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth);
+        } // letter 타입 마커 (알파벳)
+          else if (marker.type === 'letter') {
+            // 빈 공간일 경우 배경 오버레이 추가
+            if (isEmptySpace) {
+              markerGroup.append('circle')
+                .attr('cx', cx)
+                .attr('cy', cy)
+                .attr('r', stoneRadius * 0.7)
+                .attr('fill', 'rgba(218, 190, 130, 0.7)')
+                .attr('stroke', 'none');
+            }
+            
+            markerGroup.append('text')
+              .attr('x', cx)
+              .attr('y', cy + 6)
+              .attr('text-anchor', 'middle')
+              .attr('font-size', stoneRadius * 1.25)
+              .attr('fill', markerColor)
+              .attr('font-weight', 'normal')
+              .text(marker.label || 'A');
+          } 
+
+          // number 타입 마커 (숫자)
+          else if (marker.type === 'number') {
+            // 빈 공간일 경우 배경 오버레이 추가
+            if (isEmptySpace) {
+              markerGroup.append('circle')
+                .attr('cx', cx)
+                .attr('cy', cy)
+                .attr('r', stoneRadius * 0.7)
+                .attr('fill', 'rgba(218, 190, 130, 0.7)')
+                .attr('stroke', 'none');
+            }
+            
+            markerGroup.append('text')
+              .attr('x', cx)
+              .attr('y', cy + 6)
+              .attr('text-anchor', 'middle')
+              .attr('font-size', stoneRadius * 1.25)
+              .attr('fill', markerColor)
+              .attr('font-weight', 'normal')
+              .text(marker.label || '1');
+          }
       });
     }
 

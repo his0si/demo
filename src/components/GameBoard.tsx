@@ -10,6 +10,7 @@ import LeftSidebar from './LeftSidebar';
 import NavBar from './NavBar';
 import { sgfStorage } from '@/lib/sgfStorage';
 import { SGFFile } from './LeftSidebar';
+import AnalysisModal from './AnalysisModal';
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
@@ -129,7 +130,13 @@ export default function GameBoard() {
     comment,
     setComment,
     handleDeleteClick,
-    loadSGF
+    loadSGF,
+    isAnalyzing,
+    analyzeGame,
+    showAnalysisModal,
+    analysisProgress,
+    analysisStatus,
+    closeAnalysisModal
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
@@ -389,6 +396,8 @@ export default function GameBoard() {
                   onLoad={importSGF}
                   onSelectTool={setCurrentTool}
                   selectedTool={currentTool}
+                  onAnalyze={analyzeGame}
+                  isAnalyzing={isAnalyzing}
                   type="controls"
                 />
               </div>
@@ -426,6 +435,14 @@ export default function GameBoard() {
           onToggle={handleRightSidebarToggle}
         />
       </div>
+
+      {/* 분석 모달 추가 */}
+      <AnalysisModal 
+        isOpen={showAnalysisModal}
+        onClose={closeAnalysisModal}
+        progress={analysisProgress}
+        status={analysisStatus}
+      />
     </div>
   );
 }

@@ -36,6 +36,8 @@ interface GameControlsProps {
   onSelectTool?: (tool: string) => void;
   selectedTool?: string;
   type: 'score' | 'controls' | 'game-end';
+  onAnalyze?: () => void;
+  isAnalyzing?: boolean;
 }
 
 export default function GameControls({
@@ -54,6 +56,8 @@ export default function GameControls({
   onLoad,
   onSelectTool,
   selectedTool,
+  onAnalyze,
+  isAnalyzing = false,
   type
 }: GameControlsProps) {
   // 마커 모달 상태 관리
@@ -212,8 +216,17 @@ export default function GameControls({
           
           {/* AI 분석 - 모바일에서는 숨김 */}
           {!viewportState.isMobile && (
-            <button className="p-1.5 sm:p-2 text-black hover:bg-gray-100 rounded-full transition">
-              <span className="font-bold text-xs sm:text-base">AI</span>
+            <button 
+              onClick={onAnalyze} 
+              disabled={isAnalyzing}
+              className="p-1.5 sm:p-2 text-black hover:bg-gray-100 rounded-full transition disabled:opacity-50"
+              title="AI로 기보 분석"
+            >
+              {isAnalyzing ? (
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-transparent border-black rounded-full animate-spin" />
+              ) : (
+                <span className="font-bold text-xs sm:text-base">AI</span>
+              )}
             </button>
           )}
           

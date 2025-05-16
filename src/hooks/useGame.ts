@@ -3,6 +3,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Game } from '@/lib/game';
 import { Stone, Intersection } from '@/lib/types';
 import { sgfStorage } from '@/lib/sgfStorage';
+import { HighlightData } from '@/components/LeftSidebar';
 
 export default function useGame() {
   const [comment, setComment] = useState('');
@@ -26,6 +27,8 @@ export default function useGame() {
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStatus, setAnalysisStatus] = useState('분석 준비 중...');
+  const [showHighlightsModal, setShowHighlightsModal] = useState(false);
+  const [currentHighlights, setCurrentHighlights] = useState<HighlightData[]>([]);
   
   // 게임 상태 변화 시 UI 업데이트
   const updateGameState = useCallback(() => {
@@ -71,7 +74,7 @@ export default function useGame() {
   }, [updateGameState]);
   
   // SGF 로드
-  const loadSGF = useCallback((sgfContent: string) => {
+  const loadSGF = useCallback((sgfContent: string, fileId?: string) => {
     if (!gameRef.current) {
       gameRef.current = new Game(19, 19, updateGameState);
     }
@@ -87,6 +90,18 @@ export default function useGame() {
       setLastMove(lastMove ? {x: lastMove.xPos, y: lastMove.yPos} : null);
       setMarkers(gameRef.current.markers ?? []);
       setComment(gameRef.current.getGameState()?.comment ?? '');
+      
+      // 하이라이트 로드
+      if (fileId) {
+        const highlights = sgfStorage.getHighlights(fileId);
+        setCurrentHighlights(highlights);
+        // 분석된 기보인 경우 하이라이트가 있을 것임
+        if (highlights.length > 0) {
+          setShowHighlightsModal(true);
+        }
+      } else {
+        setCurrentHighlights([]);
+      }
     }
   }, [updateGameState]);
   
@@ -135,6 +150,32 @@ const goToEnd = useCallback(() => {
   
   updateGameState();
 }, [updateGameState]);
+
+  // 특정 수로 이동
+  const goToMove = useCallback((moveNum: number) => {
+    if (!gameRef.current) return;
+    
+    // 현재 노드부터 시작해서 목표 moveNum까지 이동
+    let currentMove = 0;
+    const gameTree = gameRef.current.getGameTree();
+    if (!gameTree) return;
+    
+    // 먼저 첫 번째 수로 이동
+    goToStart();
+    
+    // 그 다음 moveNum까지 순차적으로 이동
+    let currentNode = gameRef.current.getCurrentNode();
+    while (currentNode && currentMove < moveNum && currentNode.children.length > 0) {
+      const nextNode = gameTree.get(currentNode.children[0].id);
+      if (!nextNode) break;
+      
+      currentNode = nextNode;
+      gameRef.current.navigateToNode(currentNode.id);
+      currentMove++;
+    }
+    
+    updateGameState();
+  }, [goToStart, updateGameState]);
 
   // 패스
   const pass = useCallback(() => {
@@ -285,6 +326,31 @@ const goToEnd = useCallback(() => {
       // 분석이 완료되었다고 가정하고 가짜 결과 생성
       const analyzedSgf = sgfContent + '\n;C[AI 분석 완료: ' + new Date().toISOString() + ']';
       
+      // 하이라이트 데이터 생성
+      const highlights: HighlightData[] = [
+        {
+          id: '1',
+          startMove: 15,
+          endMove: 20,
+          description: '흑의 좌상귀 삼삼 포석 후 흰색의 어깨짚기. 이 상황에서 흑은 흰돌을 잡아내는 대신 실리를 챙기는 선택을 했습니다. KataGo는 이 선택을 0.8점 높게 평가합니다.',
+          boardSnapshot: gameRef.current ? gameRef.current.copyIntersections() : undefined
+        },
+        {
+          id: '2',
+          startMove: 35,
+          endMove: 42,
+          description: '우하귀에서 흰색의 침입에 대한 흑의 대응. 흑은 좀 더 공격적인 대응으로 흰돌을 가둘 기회를 놓쳤습니다. 이 지점에서 AI는 K4 지점을 추천했습니다.',
+          boardSnapshot: gameRef.current ? gameRef.current.copyIntersections() : undefined
+        },
+        {
+          id: '3',
+          startMove: 67,
+          endMove: 75,
+          description: '중앙 전투에서 흑의 실수. 연결하는 대신 공격적인 착수를 선택했으나 흰색에게 반격의 기회를 제공했습니다. 결과적으로 흑은 약 3.5점의 손해를 보았습니다.',
+          boardSnapshot: gameRef.current ? gameRef.current.copyIntersections() : undefined
+        }
+      ];
+      
       // 파일 이름 생성
       const now = new Date();
       const year = String(now.getFullYear()).slice(-2);
@@ -294,17 +360,21 @@ const goToEnd = useCallback(() => {
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const fileName = `AI_분석_${year}${month}${day}_${hours}${minutes}.sgf`;
       
-      // 로컬 스토리지에 저장
-      const savedFile = sgfStorage.saveSGF(fileName, analyzedSgf);
-      console.log('분석된 SGF 파일이 저장되었습니다:', savedFile);
+      // 로컬 스토리지에 하이라이트와 함께 저장
+      const savedFile = sgfStorage.saveSGFWithAnalysis(fileName, analyzedSgf, highlights);
+      console.log('분석된 SGF 파일이 하이라이트와 함께 저장되었습니다:', savedFile);
       
       // 분석된 SGF 파일 로드
-      loadSGF(analyzedSgf);
+      loadSGF(analyzedSgf, savedFile.id);
       
-      // 상태 업데이트 (2초 후 모달 닫기)
+      // 상태 업데이트
+      setCurrentHighlights(highlights);
+      
+      // 2초 후 모달 닫기 및 하이라이트 표시
       setTimeout(() => {
         setIsAnalyzing(false);
         setShowAnalysisModal(false);
+        setShowHighlightsModal(true); // 하이라이트 모달 표시
         alert('AI 분석이 완료되었습니다. 분석된 기보가 로드되었습니다.');
       }, 2000);
       
@@ -401,6 +471,7 @@ const goToEnd = useCallback(() => {
     makeMove,
     goToStart,
     goToEnd,
+    goToMove,
     pass,
     undo,
     redo,
@@ -421,6 +492,9 @@ const goToEnd = useCallback(() => {
     showAnalysisModal,
     analysisProgress,
     analysisStatus,
-    closeAnalysisModal
+    closeAnalysisModal,
+    showHighlightsModal,
+    setShowHighlightsModal,
+    currentHighlights
   };
 }

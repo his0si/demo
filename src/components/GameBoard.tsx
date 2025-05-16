@@ -11,6 +11,7 @@ import NavBar from './NavBar';
 import { sgfStorage } from '@/lib/sgfStorage';
 import { SGFFile } from './LeftSidebar';
 import AnalysisModal from './AnalysisModal';
+import HighlightModal from './HighlightModal';
 
 export default function GameBoard() {
   const [currentTool, setCurrentTool] = useState<string>('move');
@@ -136,7 +137,11 @@ export default function GameBoard() {
     showAnalysisModal,
     analysisProgress,
     analysisStatus,
-    closeAnalysisModal
+    closeAnalysisModal,
+    showHighlightsModal,
+    setShowHighlightsModal,
+    currentHighlights,
+    goToMove
   } = useGame();
 
   const gameRef = useRef<Game | null>(null);
@@ -274,7 +279,8 @@ export default function GameBoard() {
         return;
       }
 
-      loadSGF(sgfContent);
+      // 파일 ID 전달하여 하이라이트 로드
+      loadSGF(sgfContent, file.id);
       sgfStorage.updateOpenedTime(file.id);
       setCurrentSGFFile(file);
       loadSgfFileList();
@@ -442,6 +448,14 @@ export default function GameBoard() {
         onClose={closeAnalysisModal}
         progress={analysisProgress}
         status={analysisStatus}
+      />
+
+      {/* 하이라이트 모달 추가 */}
+      <HighlightModal 
+        isOpen={showHighlightsModal}
+        onClose={() => setShowHighlightsModal(false)}
+        highlights={currentHighlights}
+        onMoveToPosition={goToMove}
       />
     </div>
   );

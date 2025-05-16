@@ -12,7 +12,7 @@ import {
   ClockIcon,
   StarIcon,
   TrashIcon,
-  XMarkIcon
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 export interface SGFFile {
@@ -22,6 +22,17 @@ export interface SGFFile {
   createdAt: string;
   favorite?: boolean;
   thumbnail?: string;
+  isAnalyzed?: boolean;
+  highlights?: HighlightData[];
+}
+
+// 하이라이트 데이터 인터페이스 추가
+export interface HighlightData {
+  id: string;
+  startMove: number;
+  endMove: number; 
+  description: string;
+  boardSnapshot?: Intersection[][];
 }
 
 interface DeleteModalProps {
@@ -350,6 +361,13 @@ export default function LeftSidebar({
                             <div className="flex items-center flex-1 min-w-0">
                               <DocumentIcon className={`w-5 h-5 ${currentFileId === file.id ? 'text-blue-500' : 'text-gray-400'} mr-2 flex-shrink-0`} />
                               <div className="font-medium text-gray-800 truncate">{file.name}</div>
+                              
+                              {/* 분석된 파일 표시 추가 */}
+                              {file.isAnalyzed && (
+                                <span className="ml-2 px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded flex items-center">
+                                  AI
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center space-x-1 ml-2">

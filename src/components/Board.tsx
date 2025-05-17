@@ -18,6 +18,7 @@ interface BoardProps {
   onCancelDelete: () => void;
   isMarkerMode?: boolean;
   onMarkerClick?: (x: number, y: number) => void;
+  boardSize?: number;
 }
 
 export default function Board({ 
@@ -33,34 +34,65 @@ export default function Board({
   onConfirmDelete,
   onCancelDelete,
   isMarkerMode = false,
-  onMarkerClick = () => {}
+  onMarkerClick = () => {},
+  boardSize
 }: BoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 650, height: 650 });
-  
-  // 화면 크기에 따라 바둑판 크기 조정
+  const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
+
+  // 크기 업데이트 함수를 별도로 분리
+  const updateSize = () => {
+    if (!containerRef.current) return;
+    
+    const containerWidth = containerRef.current.clientWidth;
+    // 상단 컨트롤과 하단 컨트롤을 위한 공간 확보
+    const availableHeight = window.innerHeight - 180;
+    const size = Math.min(containerWidth, availableHeight, 800);
+    const finalSize = Math.max(320, size);
+    
+    console.log('Internal size calculation:', finalSize);
+    setDimensions({ width: finalSize, height: finalSize });
+  };
+
+  // 외부에서 전달받은 boardSize 처리
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        // 최대 크기 제한
-        const maxSize = Math.min(
-          containerRef.current.clientWidth,
-          // 컨테이너 높이에서 컨트롤 버튼 등을 고려해 여유 공간 확보
-          window.innerHeight - 240
-        );
-        
-        // 최소 크기 보장
-        const boardSize = Math.max(400, Math.min(maxSize, 650));
-        
-        setDimensions({ width: boardSize, height: boardSize });
+    if (boardSize) {
+      console.log('Setting board dimensions from prop:', boardSize);
+      setDimensions({ width: boardSize, height: boardSize });
+    } else {
+      // boardSize prop이 없을 때만 내부 계산 사용
+      updateSize();
+    }
+  }, [boardSize]);
+  
+  // 동적 크기 조정 로직
+  useEffect(() => {
+    // ResizeObserver 등록
+    const resizeObserver = new ResizeObserver(() => {
+      // boardSize prop이 없을 때만 내부 크기 계산 적용
+      if (!boardSize) {
+        updateSize();
+      }
+    });
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
+    const handleWindowResize = () => {
+      // boardSize prop이 없을 때만 내부 크기 계산 적용
+      if (!boardSize) {
+        updateSize();
       }
     };
     
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+    window.addEventListener('resize', handleWindowResize);
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+      resizeObserver.disconnect();
+    };
+  }, [boardSize]);
   
   const stoneRadius = Math.min(dimensions.width / size, dimensions.height / size) / 2;
   
@@ -191,14 +223,21 @@ export default function Board({
       normalizedMarkers.forEach(marker => {
         const cx = stoneRadius + marker.x * (dimensions.width / size);
         const cy = stoneRadius + marker.y * (dimensions.height / size);
-
+        
+        // 해당 위치의 돌 색상 확인
+        const stoneAtPosition = boardState[marker.x]?.[marker.y]?.stone;
+        const isBlackStone = stoneAtPosition === StoneEnum.Black;
+        const isEmptySpace = stoneAtPosition === StoneEnum.None;
+        const markerColor = isBlackStone ? 'white' : 'black';
+        const strokeWidth = isBlackStone ? 2 : 1.5;
+        
         if (marker.type === 'circle') {
           markerGroup.append('circle')
             .attr('cx', cx)
             .attr('cy', cy)
             .attr('r', stoneRadius / 2.2)
-            .attr('stroke', 'red')
-            .attr('stroke-width', 2)
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth)
             .attr('fill', 'none');
         } else if (marker.type === 'square') {
           markerGroup.append('rect')
@@ -206,8 +245,8 @@ export default function Board({
             .attr('y', cy - stoneRadius / 2.2)
             .attr('width', stoneRadius / 1.1)
             .attr('height', stoneRadius / 1.1)
-            .attr('stroke', 'blue')
-            .attr('stroke-width', 2)
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth)
             .attr('fill', 'none');
         } else if (marker.type === 'triangle') {
           const path = d3.path();
@@ -218,8 +257,8 @@ export default function Board({
           path.closePath();
           markerGroup.append('path')
             .attr('d', path.toString())
-            .attr('stroke', 'green')
-            .attr('stroke-width', 2)
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth)
             .attr('fill', 'none');
         } else if (marker.type === 'cross') {
           markerGroup.append('line')
@@ -227,32 +266,58 @@ export default function Board({
             .attr('y1', cy - stoneRadius / 2)
             .attr('x2', cx + stoneRadius / 2)
             .attr('y2', cy + stoneRadius / 2)
-            .attr('stroke', 'yellow')
-            .attr('stroke-width', 2);
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth);
           markerGroup.append('line')
             .attr('x1', cx - stoneRadius / 2)
             .attr('y1', cy + stoneRadius / 2)
             .attr('x2', cx + stoneRadius / 2)
             .attr('y2', cy - stoneRadius / 2)
-            .attr('stroke', 'yellow')
-            .attr('stroke-width', 2);
-        } else if (marker.type === 'letter') {
-          markerGroup.append('text')
-            .attr('x', cx)
-            .attr('y', cy + 4)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', 18)
-            .attr('fill', 'purple')
-            .text(marker.label || 'A');
-        } else if (marker.type === 'number') {
-          markerGroup.append('text')
-            .attr('x', cx)
-            .attr('y', cy + 4)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', 18)
-            .attr('fill', 'purple')
-            .text(marker.label || '1');
-        }
+            .attr('stroke', markerColor)
+            .attr('stroke-width', strokeWidth);
+        } // letter 타입 마커 (알파벳)
+          else if (marker.type === 'letter') {
+            // 빈 공간일 경우 배경 오버레이 추가
+            if (isEmptySpace) {
+              markerGroup.append('circle')
+                .attr('cx', cx)
+                .attr('cy', cy)
+                .attr('r', stoneRadius * 0.7)
+                .attr('fill', 'rgba(218, 190, 130, 0.7)')
+                .attr('stroke', 'none');
+            }
+            
+            markerGroup.append('text')
+              .attr('x', cx)
+              .attr('y', cy + 6)
+              .attr('text-anchor', 'middle')
+              .attr('font-size', stoneRadius * 1.25)
+              .attr('fill', markerColor)
+              .attr('font-weight', 'normal')
+              .text(marker.label || 'A');
+          } 
+
+          // number 타입 마커 (숫자)
+          else if (marker.type === 'number') {
+            // 빈 공간일 경우 배경 오버레이 추가
+            if (isEmptySpace) {
+              markerGroup.append('circle')
+                .attr('cx', cx)
+                .attr('cy', cy)
+                .attr('r', stoneRadius * 0.7)
+                .attr('fill', 'rgba(218, 190, 130, 0.7)')
+                .attr('stroke', 'none');
+            }
+            
+            markerGroup.append('text')
+              .attr('x', cx)
+              .attr('y', cy + 6)
+              .attr('text-anchor', 'middle')
+              .attr('font-size', stoneRadius * 1.25)
+              .attr('fill', markerColor)
+              .attr('font-weight', 'normal')
+              .text(marker.label || '1');
+          }
       });
     }
 
@@ -369,14 +434,14 @@ export default function Board({
     
   }, [boardState, size, lastMoveMarkers, isGameEnded, stoneRadius, dimensions, onIntersectionClick, markers, showDeleteConfirm, deletePosition, onDeleteClick, onConfirmDelete, onCancelDelete, isMarkerMode, onMarkerClick]);
   
-  return (
-    <div ref={containerRef} className="w-full flex justify-center">
+    return (
+    <div ref={containerRef} className="w-full flex justify-center items-center my-0">
       <svg 
         ref={svgRef} 
         width={dimensions.width} 
         height={dimensions.height}
         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-        className="mx-auto border rounded shadow-md"
+        className="mx-auto border border-gray-300 rounded shadow-md"
       />
     </div>
   );

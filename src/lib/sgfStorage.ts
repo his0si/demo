@@ -90,6 +90,78 @@ export const sgfStorage = {
     }
   },
 
+  // 분석된 SGF 파일로 저장
+  saveSGFWithAnalysis: (name: string, content: string, highlights: HighlightData[], thumbnail?: string): SGFFile => {
+    if (typeof window === 'undefined') throw new Error('브라우저 환경이 아닙니다');
+
+    try {
+      // 현재 목록 불러오기
+      const files = sgfStorage.getAll();
+      
+      // 파일명 처리
+      let uniqueName = name;
+      let counter = 1;
+
+      while (files.some(file => file.name === uniqueName)) {
+        const nameParts = name.split('.');
+        const ext = nameParts.pop() || '';
+        const baseName = nameParts.join('.');
+        uniqueName = `${baseName} (${counter}).${ext}`;
+        counter++;
+      }
+      
+      // 새 SGF 파일 정보 생성 with 분석 플래그
+      const newFile: SGFFile = {
+        id: Date.now().toString(),
+        name: uniqueName,
+        openedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        favorite: false,
+        thumbnail,
+        isAnalyzed: true, // 분석 완료 표시
+        highlights: highlights // 하이라이트 데이터 저장
+      };
+      
+      // 목록에 추가
+      const updatedFiles = [newFile, ...files];
+      
+      // 목록 및 내용 저장
+      localStorage.setItem(SGF_STORAGE_KEY, JSON.stringify(updatedFiles));
+      localStorage.setItem(`sgf-content-${newFile.id}`, content);
+      
+      // 하이라이트 데이터 저장
+      if (highlights && highlights.length > 0) {
+        localStorage.setItem(`highlights-${newFile.id}`, JSON.stringify(highlights));
+      }
+      
+      // 이벤트 발생
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: SGF_STORAGE_KEY,
+        newValue: JSON.stringify(updatedFiles)
+      }));
+      
+      return newFile;
+    } catch (error) {
+      console.error('분석된 SGF 파일 저장 중 오류 발생:', error);
+      throw error;
+    }
+  },
+
+  // 하이라이트 데이터 가져오기
+  getHighlights: (fileId: string): HighlightData[] => {
+    if (typeof window === 'undefined') return [];
+    
+    try {
+      const highlightsData = localStorage.getItem(`highlights-${fileId}`);
+      if (!highlightsData) return [];
+      
+      return JSON.parse(highlightsData);
+    } catch (error) {
+      console.error('하이라이트 데이터 로드 중 오류:', error);
+      return [];
+    }
+  },
+
   // 최근 열어본 시간 업데이트
   updateOpenedTime: (fileId: string): void => {
     if (typeof window === 'undefined') return;

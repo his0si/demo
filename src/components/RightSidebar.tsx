@@ -11,7 +11,7 @@ import {
   ChevronDoubleLeftIcon
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export interface GameState {
   comment: string;
@@ -28,21 +28,51 @@ interface RightSidebarProps {
   setComment: (comment: string) => void;
   gameRef: React.RefObject<Game | null>;
   gameTree?: GameTree;
+  isCollapsed: boolean;
+  onToggle: () => void;
 }
 
-export default function RightSidebar({ comment, setComment, gameRef, gameTree }: RightSidebarProps) {
-  // 사이드바 접기/펼치기 상태 관리
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export default function RightSidebar({ 
+  comment, 
+  setComment, 
+  gameRef, 
+  gameTree,
+  isCollapsed,
+  onToggle
+}: RightSidebarProps) {
   // 게임 트리 컨테이너 참조 추가
   const treeContainerRef = useRef<HTMLDivElement>(null);
   // 현재 선택된 노드 ID 참조
   const currentNodeIdRef = useRef<string | undefined>(gameTree?.currentNodeId);
+  // 사용자가 직접 토글 버튼을 클릭한 경우를 추적하기 위한 ref
+  const userToggleRef = useRef<boolean>(false);
+  
+  // 토글 버튼 클릭 핸들러
+  const handleToggleClick = useCallback(() => {
+    userToggleRef.current = true;
+    onToggle();
+    // 200ms 후에 사용자 액션 플래그 초기화
+    setTimeout(() => {
+      userToggleRef.current = false;
+    }, 200);
+  }, [onToggle]);
   
   // 화면 크기 감지 및 자동 접기
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024; // lg 브레이크포인트
-      setIsCollapsed(mobile);
+      
+      // 사용자가 직접 토글한 경우 자동 접기를 적용하지 않음
+      if (userToggleRef.current) {
+        return;
+      }
+      
+      if (mobile && !isCollapsed) {
+        onToggle();
+      } else if (!mobile && isCollapsed) {
+        // 모바일 화면이 아니고 접혀있는 상태라면 펼침 (선택 사항)
+        // onToggle();
+      }
     };
     
     // 초기 로드 시 체크
@@ -53,7 +83,7 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
     
     // 클린업
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  }, [isCollapsed, onToggle]);
 
   // 코멘트 변경 핸들러
   const handleCommentChange = useCallback((value: string) => {
@@ -100,7 +130,7 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
         // 접힌 상태 UI
         <div className="flex flex-col items-center justify-between h-full py-4">
           <button
-            onClick={() => setIsCollapsed(false)}
+            onClick={handleToggleClick}
             className="p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center mb-4"
             aria-label="펼치기"
           >
@@ -127,7 +157,7 @@ export default function RightSidebar({ comment, setComment, gameRef, gameTree }:
             </div>
             
             <button
-              onClick={() => setIsCollapsed(true)}
+              onClick={handleToggleClick}
               className="hover:bg-gray-200 rounded-full transition-colors p-1.5"
               aria-label="사이드바 접기"
             >

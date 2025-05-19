@@ -4,6 +4,7 @@ import { Game } from '@/lib/game';
 import { Stone, Intersection } from '@/lib/types';
 import { sgfStorage } from '@/lib/sgfStorage';
 import { HighlightData } from '@/components/LeftSidebar';
+import type { SGFFile } from '@/components/LeftSidebar';
 
 export default function useGame() {
   const [comment, setComment] = useState('');

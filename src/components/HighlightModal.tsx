@@ -54,8 +54,8 @@ export default function HighlightModal({
             const x = index % 19;
             const y = Math.floor(index / 19);
             
-            // 해당 위치의 돌 정보
-            const stone = highlight.boardSnapshot[x]?.[y]?.stone;
+            // 해당 위치의 돌 정보 - 옵셔널 체이닝으로 안전하게 접근
+            const stone = highlight.boardSnapshot?.[x]?.[y]?.stone;
             
             return (
               <div 

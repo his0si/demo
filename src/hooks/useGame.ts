@@ -73,11 +73,12 @@ export default function useGame() {
     setLastMove(null);
   }, [updateGameState]);
   
-  // SGF 로드
-  const loadSGF = useCallback((sgfContent: string, fileId?: string) => {
+  // loadSGFContent 함수 추가 - 중복 제거를 위해 공통 함수화
+  const loadSGFContent = useCallback(async (sgfContent: string, fileId?: string) => {
     if (!gameRef.current) {
       gameRef.current = new Game(19, 19, updateGameState);
     }
+    
     const success = gameRef.current.loadSGF(sgfContent);
     if (success) {
       setGame(gameRef.current);
@@ -91,19 +92,37 @@ export default function useGame() {
       setMarkers(gameRef.current.markers ?? []);
       setComment(gameRef.current.getGameState()?.comment ?? '');
       
-      // 하이라이트 로드
+      // 하이라이트 로드 - 비동기 처리 개선
       if (fileId) {
-        const highlights = sgfStorage.getHighlights(fileId);
-        setCurrentHighlights(highlights);
-        // 분석된 기보인 경우 하이라이트가 있을 것임
-        if (highlights.length > 0) {
-          setShowHighlightsModal(true);
+        try {
+          const highlights = await sgfStorage.getHighlights(fileId);
+          setCurrentHighlights(highlights);
+          // 분석된 기보인 경우 하이라이트가 있을 것임
+          if (highlights.length > 0) {
+            setShowHighlightsModal(true);
+          }
+        } catch (error) {
+          console.error('하이라이트 데이터 로드 중 오류:', error);
+          setCurrentHighlights([]);
         }
       } else {
         setCurrentHighlights([]);
       }
+      
+      return true;
     }
+    return false;
   }, [updateGameState]);
+  
+  // loadSGF 함수 수정 - 비동기 처리 개선
+  const loadSGF = useCallback(async (sgfContent: string, fileId?: string) => {
+    try {
+      return await loadSGFContent(sgfContent, fileId);
+    } catch (error) {
+      console.error('SGF 로드 중 오류 발생:', error);
+      return false;
+    }
+  }, [loadSGFContent]);
   
   // 돌 놓기
   const makeMove = useCallback((x: number, y: number) => {
@@ -209,37 +228,51 @@ const goToEnd = useCallback(() => {
   }, []);
 
   // SGF 불러오기
-  const importSGF = useCallback(() => {
+  const importSGF = useCallback(async () => {
     console.log('SGF 파일 불러오기 다이얼로그 실행');
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.sgf';
-    
-    // DOM 이벤트 핸들러 타입으로 수정
-    input.onchange = function(event: Event) {
-      const target = event.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (!file) return;
+    return new Promise<SGFFile | null>((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.sgf';
       
-      console.log(`선택된 SGF 파일: ${file.name}`);
-      const reader = new FileReader();
-      reader.onload = () => {
-        const sgfContent = reader.result as string;
-        loadSGF(sgfContent);
-        
-        // SGF 파일을 로컬 스토리지에도 저장
-        try {
-          const savedFile = sgfStorage.saveSGF(file.name, sgfContent);
-          console.log('SGF 파일이 저장되었습니다:', savedFile);
-          
-        } catch (error) {
-          console.error('SGF 저장 중 오류 발생:', error);
+      input.onchange = async function(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (!file) {
+          resolve(null);
+          return;
         }
+        
+        console.log(`선택된 SGF 파일: ${file.name}`);
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const sgfContent = reader.result as string;
+            
+            // IndexedDB에 저장
+            const savedFile = await sgfStorage.saveSGF(file.name, sgfContent);
+            
+            // 파일 로드
+            await loadSGF(sgfContent, savedFile.id);
+            resolve(savedFile);
+          } catch (error) {
+            console.error('SGF 저장 및 로드 중 오류 발생:', error);
+            alert('SGF 파일을 불러오는 중 오류가 발생했습니다.');
+            resolve(null);
+          }
+        };
+        
+        reader.onerror = () => {
+          console.error('파일 읽기 오류');
+          alert('파일을 읽는 중 오류가 발생했습니다.');
+          resolve(null);
+        };
+        
+        reader.readAsText(file);
       };
-      reader.readAsText(file);
-    };
-    
-    input.click();
+      
+      input.click();
+    });
   }, [loadSGF]);
 
   // 영역 점령
@@ -320,8 +353,8 @@ const goToEnd = useCallback(() => {
     }
   }, []);
 
-  // 분석 완료 처리 함수 추가
-  const finishAnalysis = useCallback((sgfContent: string) => {
+  // 분석 완료 처리 함수 추가 (async 함수로 변경)
+  const finishAnalysis = useCallback(async (sgfContent: string) => {
     try {
       // 분석이 완료되었다고 가정하고 가짜 결과 생성
       const analyzedSgf = sgfContent + '\n;C[AI 분석 완료: ' + new Date().toISOString() + ']';
@@ -360,8 +393,8 @@ const goToEnd = useCallback(() => {
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const fileName = `AI_분석_${year}${month}${day}_${hours}${minutes}.sgf`;
       
-      // 로컬 스토리지에 하이라이트와 함께 저장
-      const savedFile = sgfStorage.saveSGFWithAnalysis(fileName, analyzedSgf, highlights);
+      // 로컬 스토리지에 하이라이트와 함께 저장 (IndexedDB 사용)
+      const savedFile = await sgfStorage.saveSGFWithAnalysis(fileName, analyzedSgf, highlights);
       console.log('분석된 SGF 파일이 하이라이트와 함께 저장되었습니다:', savedFile);
       
       // 분석된 SGF 파일 로드
@@ -495,6 +528,7 @@ const goToEnd = useCallback(() => {
     closeAnalysisModal,
     showHighlightsModal,
     setShowHighlightsModal,
-    currentHighlights
+    currentHighlights,
+    loadSGFContent // 새로 추가된 함수도 외부에서 사용할 수 있도록 노출
   };
 }

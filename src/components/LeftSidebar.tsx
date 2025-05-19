@@ -1,9 +1,11 @@
 "use client";
 
+// 기존 import 유지
 import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { motion } from "framer-motion";
+// 기존 아이콘 import 유지
 import { 
   ChevronDoubleLeftIcon, 
   ChevronDoubleRightIcon, 
@@ -14,6 +16,8 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+// Intersection 타입 import 추가
+import { Intersection } from "@/lib/types";
 
 export interface SGFFile {
   id: string;
@@ -26,7 +30,7 @@ export interface SGFFile {
   highlights?: HighlightData[];
 }
 
-// 하이라이트 데이터 인터페이스 추가
+// 하이라이트 데이터 인터페이스
 export interface HighlightData {
   id: string;
   startMove: number;

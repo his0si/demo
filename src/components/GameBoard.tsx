@@ -24,6 +24,9 @@ export default function GameBoard() {
   const [boardSize, setBoardSize] = useState(0);
   const boardContainerRef = useRef<HTMLDivElement>(null);
   const userToggleRef = useRef(false);
+  
+  // Game 객체를 위한 ref - 한 곳에만 정의
+  const gameRef = useRef<Game | null>(null);
 
   // 반응형 상태 감지 (모바일, 태블릿, 데스크탑)
   const [viewportSize, setViewportSize] = useState({
@@ -32,6 +35,52 @@ export default function GameBoard() {
     isDesktop: true
   });
 
+  // useGame에서 필요한 기능들을 가져옵니다
+  const {
+    isGameEnded,
+    boardState,
+    blackScore,
+    whiteScore,
+    blackTerritory,
+    whiteTerritory,
+    currentPlayer,
+    makeMove,
+    pass,
+    undo,
+    redo,
+    claimTerritory,
+    startGame,
+    goToStart,
+    goToEnd,
+    loadSGFContent, // 새로 추가된 공통 함수 사용
+    importSGF: importSGFFromHook, // 이름 변경하여 충돌 방지
+    game, // game 객체 자체를 활용
+    comment,
+    setComment,
+    handleDeleteClick,
+    isAnalyzing,
+    analyzeGame,
+    showAnalysisModal,
+    analysisProgress,
+    analysisStatus,
+    closeAnalysisModal,
+    showHighlightsModal,
+    setShowHighlightsModal,
+    currentHighlights,
+    goToMove
+  } = useGame();
+  
+  // SGF 파일 목록 로드 함수 정의
+  const loadSgfFileList = useCallback(async () => {
+    try {
+      const files = await sgfStorage.getAll();
+      setSgfFiles(files);
+    } catch (error) {
+      console.error('SGF 파일 목록 로드 중 오류:', error);
+    }
+  }, []);
+
+  // 반응형 디자인 코드 (기존 useEffect 유지)
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -92,11 +141,10 @@ export default function GameBoard() {
     };
   }, []);
 
-  // 사이드바 토글 핸들러
+  // 사이드바 토글 핸들러 - 첫 번째 선언 유지, 두 번째 선언 제거
   const handleSidebarToggle = useCallback(() => {
     userToggleRef.current = true;
     setIsSidebarCollapsed(prev => !prev);
-    // 토글 후 타이머로 사용자 액션 플래그 초기화
     setTimeout(() => {
       userToggleRef.current = false;
     }, 200);
@@ -110,60 +158,77 @@ export default function GameBoard() {
     }, 200);
   }, []);
 
-  const {
-    isGameEnded,
-    boardState,
-    blackScore,
-    whiteScore,
-    blackTerritory,
-    whiteTerritory,
-    currentPlayer,
-    makeMove,
-    pass,
-    undo,
-    redo,
-    importSGF,
-    claimTerritory,
-    startGame,
-    goToStart,
-    goToEnd,
-    game,
-    comment,
-    setComment,
-    handleDeleteClick,
-    loadSGF,
-    isAnalyzing,
-    analyzeGame,
-    showAnalysisModal,
-    analysisProgress,
-    analysisStatus,
-    closeAnalysisModal,
-    showHighlightsModal,
-    setShowHighlightsModal,
-    currentHighlights,
-    goToMove
-  } = useGame();
+  // SGF 파일 불러오기 함수 - 중복 제거
+  const importSGF = useCallback(async () => {
+    const savedFile = await importSGFFromHook();
+    if (savedFile) {
+      setCurrentSGFFile(savedFile);
+      await loadSgfFileList(); // 파일 목록 갱신
+    }
+  }, [importSGFFromHook, loadSgfFileList]);
 
-  const gameRef = useRef<Game | null>(null);
+  // SGF 파일 불러오기 함수 개선
+  const handleLoadSGF = useCallback(async (file: SGFFile) => {
+    try {
+      const sgfContent = await sgfStorage.getSGFContent(file.id);
+      if (!sgfContent) {
+        alert('SGF 파일 내용을 불러올 수 없습니다.');
+        return;
+      }
 
-  // SGF 파일 목록 로드
-  const loadSgfFileList = useCallback(() => {
-    const files = sgfStorage.getAll();
-    setSgfFiles(files);
-  }, []);
+      // 비동기 처리 개선
+      const success = await loadSGFContent(sgfContent, file.id);
+      if (success) {
+        await sgfStorage.updateOpenedTime(file.id);
+        setCurrentSGFFile(file);
+        await loadSgfFileList(); // 파일 목록 갱신
+      } else {
+        alert('SGF 파일 형식이 올바르지 않습니다.');
+      }
+    } catch (error) {
+      console.error('SGF 로드 중 오류 발생:', error);
+      alert('SGF 파일을 불러오는 중 오류가 발생했습니다.');
+    }
+  }, [loadSGFContent, loadSgfFileList]);
+  
+  // 즐겨찾기 토글 핸들러 - 첫 번째 선언 유지, 두 번째 선언 제거
+  const handleToggleFavorite = useCallback(async (file: SGFFile) => {
+    try {
+      await sgfStorage.toggleFavorite(file.id);
+      loadSgfFileList();
+    } catch (error) {
+      console.error('즐겨찾기 토글 중 오류:', error);
+    }
+  }, [loadSgfFileList]);
 
+  // 파일 삭제 핸들러 - 첫 번째 선언 유지, 두 번째 선언 제거
+  const handleDeleteFile = useCallback(async (file: SGFFile) => {
+    try {
+      if (currentSGFFile && currentSGFFile.id === file.id) {
+        startGame();
+        setCurrentSGFFile(null);
+      }
+
+      await sgfStorage.deleteSGF(file.id);
+      loadSgfFileList();
+    } catch (error) {
+      console.error('SGF 파일 삭제 중 오류 발생:', error);
+      alert('파일 삭제 중 오류가 발생했습니다.');
+    }
+  }, [currentSGFFile, loadSgfFileList, startGame]);
+
+  // IndexedDB 이벤트 구독 추가
   useEffect(() => {
     loadSgfFileList();
     
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'goggle-sgf-files') {
-        loadSgfFileList();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
+    // IndexedDB 커스텀 이벤트 구독
+    const unsubscribe = sgfStorage.subscribe((event) => {
+      console.log('SGF 스토리지 변경 감지:', event);
+      loadSgfFileList();
+    });
+    
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      unsubscribe(); // 컴포넌트 언마운트 시 구독 해제
     };
   }, [loadSgfFileList]);
 
@@ -173,6 +238,7 @@ export default function GameBoard() {
     }
   }, [boardState, startGame]);
 
+  // useEffect에서 game 업데이트 - 중복 제거
   useEffect(() => {
     if (game) {
       gameRef.current = game;
@@ -240,11 +306,11 @@ export default function GameBoard() {
     [currentTool, handleIntersectionClick]
   );
 
-  // SGF 파일 저장 함수
-  const handleSaveSGF = useCallback(() => {
-    if (!gameRef.current) return;
+  // SGF 파일 저장 함수 개선
+  const handleSaveSGF = useCallback(async () => {
+    if (!game) return;
 
-    const sgf = gameRef.current.saveSGF();
+    const sgf = game.saveSGF();
     if (sgf) {
       try {
         const now = new Date();
@@ -255,11 +321,13 @@ export default function GameBoard() {
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const fileName = `Goggle-${year}${month}${day}-${hours}${minutes}.sgf`;
 
+        // 파일 다운로드
         const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
         FileSaver.saveAs(blob, fileName);
 
-        const savedFile = sgfStorage.saveSGF(fileName, sgf);
-        loadSgfFileList();
+        // IndexedDB에 저장
+        const savedFile = await sgfStorage.saveSGF(fileName, sgf);
+        await loadSgfFileList();
         setCurrentSGFFile(savedFile);
 
         alert(`SGF 파일이 저장되었습니다: ${fileName}`);
@@ -268,49 +336,7 @@ export default function GameBoard() {
         alert('SGF 파일 저장 중 오류가 발생했습니다.');
       }
     }
-  }, [loadSgfFileList]);
-
-  // SGF 파일 불러오기 함수
-  const handleLoadSGF = useCallback((file: SGFFile) => {
-    try {
-      const sgfContent = sgfStorage.getSGFContent(file.id);
-      if (!sgfContent) {
-        alert('SGF 파일 내용을 불러올 수 없습니다.');
-        return;
-      }
-
-      // 파일 ID 전달하여 하이라이트 로드
-      loadSGF(sgfContent, file.id);
-      sgfStorage.updateOpenedTime(file.id);
-      setCurrentSGFFile(file);
-      loadSgfFileList();
-    } catch (error) {
-      console.error('SGF 로드 중 오류 발생:', error);
-      alert('SGF 파일을 불러오는 중 오류가 발생했습니다.');
-    }
-  }, [loadSGF, loadSgfFileList]);
-
-  // 즐겨찾기 토글 핸들러
-  const handleToggleFavorite = useCallback((file: SGFFile) => {
-    sgfStorage.toggleFavorite(file.id);
-    loadSgfFileList();
-  }, [loadSgfFileList]);
-
-  // 파일 삭제 핸들러
-  const handleDeleteFile = useCallback((file: SGFFile) => {
-    try {
-      if (currentSGFFile && currentSGFFile.id === file.id) {
-        startGame();
-        setCurrentSGFFile(null);
-      }
-
-      sgfStorage.deleteSGF(file.id);
-      loadSgfFileList();
-    } catch (error) {
-      console.error('SGF 파일 삭제 중 오류 발생:', error);
-      alert('파일 삭제 중 오류가 발생했습니다.');
-    }
-  }, [currentSGFFile, loadSgfFileList, startGame]);
+  }, [game, loadSgfFileList]);
 
   if (!boardState) {
     return (

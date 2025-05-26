@@ -32,7 +32,7 @@ const LandingPage: React.FC = () => {
           <div className="flex justify-between items-center">
             <button
               onClick={scrollToTop}
-              className="text-xl md:text-2xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
+              className="text-2xl font-bold tracking-tight text-gray-900"
             >
               goggle<span className="text-sky-400">.</span>
             </button>

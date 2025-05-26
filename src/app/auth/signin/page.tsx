@@ -17,7 +17,7 @@ export default function SignInPage() {
             <Link href="/">
               <button
                 onClick={scrollToTop}
-                className="text-2xl md:text-4xl tracking-tight text-gray-900 hover:text-gray-700 transition-all duration-300"
+                className="text-2xl font-bold tracking-tight text-gray-900"
               >
                 goggle<span className="text-sky-400">.</span>
               </button>

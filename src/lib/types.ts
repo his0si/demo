@@ -163,6 +163,29 @@ export interface MatrixDictParams {
   onNodeClick: (nodeId: string) => void;  // nodeId 매개변수 추가
 }
 
+export interface PatternDescription {
+  description: string;
+  url: string;
+}
+
+export interface Pattern {
+  name: string;
+  anchors: [number, number][];
+  vertices: [number, number][];
+  type: string;
+  url: string;
+}
+
+declare module '@sabaki/boardmatcher' {
+  interface Pattern {
+    name: string;
+    url: string;
+    type: string;
+    anchors: number[][];
+    vertices: number[][];
+  }
+}
+
 export interface Position {
   x: number;
   y: number;

@@ -45,7 +45,7 @@ export default function useGame() {
     setLastMove(lastMove ? {x: lastMove.xPos, y: lastMove.yPos} : null);
     
     const currentComment = game.getGameState()?.comment ?? '';
-    console.log("🗒️ Updating comment from GameState:", currentComment);
+    // console.log("🗒️ Updating comment from GameState:", currentComment);
     setComment(currentComment);
     
     // 영역 점수 계산

@@ -35,6 +35,9 @@ export default function RightSidebar({
   const currentNodeIdRef = useRef<string | undefined>(gameTree?.currentNodeId);
   const userToggleRef = useRef<boolean>(false);
   
+  // lastMove를 별도의 변수로 추출
+  const lastMove = gameRef.current?.getLastMove();
+
   // 패턴 인식 관련 효과
   useEffect(() => {
     const updatePattern = async () => {
@@ -48,7 +51,7 @@ export default function RightSidebar({
       }
     };
     updatePattern();
-  }, [gameRef, gameRef.current?.getLastMove()]);
+  }, [gameRef, lastMove]);
 
   // 토글 버튼 클릭 핸들러
   const handleToggleClick = useCallback(() => {
@@ -89,17 +92,19 @@ export default function RightSidebar({
     }
   }, [gameRef]);
 
-  // 현재 노드 스크롤 효과
+  // 현재 노드 스크롤 효과 - gameTree 의존성 추가
   useEffect(() => {
     if (!gameTree || !treeContainerRef.current) return;
     if (currentNodeIdRef.current !== gameTree.currentNodeId) {
       currentNodeIdRef.current = gameTree.currentNodeId;
       setTimeout(() => {
-        const selectedNode = treeContainerRef.current?.querySelector(`[data-node-id="${gameTree.currentNodeId}"]`);
+        const selectedNode = treeContainerRef.current?.querySelector(
+          `[data-node-id="${gameTree.currentNodeId}"]`
+        );
         selectedNode?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
-  }, [gameTree?.currentNodeId]);
+  }, [gameTree]);
 
   return (
     <motion.aside 

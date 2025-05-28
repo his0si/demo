@@ -2,7 +2,7 @@
 
 import { Game } from '@/lib/game';
 import GameTreeManager from '@/components/GameTree/GameTree';
-import { GameTree } from '@/lib/types';
+import { GameTree, PatternDescription } from '@/lib/types';
 import { 
   DocumentTextIcon, 
   PuzzlePieceIcon, 
@@ -11,22 +11,12 @@ import {
   ChevronDoubleLeftIcon
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useCallback, useEffect, useRef } from 'react';
-
-export interface GameState {
-  comment: string;
-  [key: string]: unknown;
-}
-
-export interface GameRef {
-  getGameState: () => GameState;
-  updateComment: (comment: string) => void;
-}
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface RightSidebarProps {
   comment: string;
   setComment: (comment: string) => void;
-  gameRef: React.RefObject<Game | null>;
+  gameRef: React.RefObject<Game>;
   gameTree?: GameTree;
   isCollapsed: boolean;
   onToggle: () => void;
@@ -40,48 +30,50 @@ export default function RightSidebar({
   isCollapsed,
   onToggle
 }: RightSidebarProps) {
-  // 게임 트리 컨테이너 참조 추가
+  const [currentPattern, setCurrentPattern] = useState<PatternDescription | null>(null);
   const treeContainerRef = useRef<HTMLDivElement>(null);
-  // 현재 선택된 노드 ID 참조
   const currentNodeIdRef = useRef<string | undefined>(gameTree?.currentNodeId);
-  // 사용자가 직접 토글 버튼을 클릭한 경우를 추적하기 위한 ref
   const userToggleRef = useRef<boolean>(false);
   
+  // lastMove를 별도의 변수로 추출
+  const lastMove = gameRef.current?.getLastMove();
+
+  // 패턴 인식 관련 효과
+  useEffect(() => {
+    const updatePattern = async () => {
+      if (!gameRef.current) return;
+      try {
+        const pattern = await gameRef.current.getCurrentPattern();
+        setCurrentPattern(pattern);
+      } catch (error) {
+        console.error('패턴 인식 중 오류 발생:', error);
+        setCurrentPattern(null);
+      }
+    };
+    updatePattern();
+  }, [gameRef, lastMove]);
+
   // 토글 버튼 클릭 핸들러
   const handleToggleClick = useCallback(() => {
     userToggleRef.current = true;
     onToggle();
-    // 200ms 후에 사용자 액션 플래그 초기화
     setTimeout(() => {
       userToggleRef.current = false;
     }, 200);
   }, [onToggle]);
-  
+
   // 화면 크기 감지 및 자동 접기
   useEffect(() => {
     const checkScreenSize = () => {
-      const mobile = window.innerWidth < 1024; // lg 브레이크포인트
-      
-      // 사용자가 직접 토글한 경우 자동 접기를 적용하지 않음
-      if (userToggleRef.current) {
-        return;
-      }
-      
+      if (userToggleRef.current) return;
+      const mobile = window.innerWidth < 1024;
       if (mobile && !isCollapsed) {
         onToggle();
-      } else if (!mobile && isCollapsed) {
-        // 모바일 화면이 아니고 접혀있는 상태라면 펼침 (선택 사항)
-        // onToggle();
       }
     };
     
-    // 초기 로드 시 체크
     checkScreenSize();
-    
-    // 리사이즈 이벤트 리스너 등록
     window.addEventListener('resize', checkScreenSize);
-    
-    // 클린업
     return () => window.removeEventListener('resize', checkScreenSize);
   }, [isCollapsed, onToggle]);
 
@@ -100,26 +92,19 @@ export default function RightSidebar({
     }
   }, [gameRef]);
 
-  // 현재 노드가 변경될 때마다 해당 노드로 스크롤
+  // 현재 노드 스크롤 효과 - gameTree 의존성 추가
   useEffect(() => {
     if (!gameTree || !treeContainerRef.current) return;
-
-    // 현재 노드 ID가 변경된 경우에만 스크롤
     if (currentNodeIdRef.current !== gameTree.currentNodeId) {
       currentNodeIdRef.current = gameTree.currentNodeId;
-      
-      // 약간의 지연을 주어 노드 렌더링 후 스크롤하도록 함
       setTimeout(() => {
-        const selectedNode = treeContainerRef.current?.querySelector(`[data-node-id="${gameTree.currentNodeId}"]`);
-        if (selectedNode) {
-          selectedNode.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }
+        const selectedNode = treeContainerRef.current?.querySelector(
+          `[data-node-id="${gameTree.currentNodeId}"]`
+        );
+        selectedNode?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
-  }, [gameTree, gameTree?.currentNodeId]);
+  }, [gameTree]);
 
   return (
     <motion.aside 
@@ -127,7 +112,6 @@ export default function RightSidebar({
       initial={false}
     >
       {isCollapsed ? (
-        // 접힌 상태 UI
         <div className="flex flex-col items-center justify-between h-full py-4">
           <button
             onClick={handleToggleClick}
@@ -137,19 +121,17 @@ export default function RightSidebar({
             <ChevronDoubleLeftIcon className="w-5 h-5 text-gray-400" />
           </button>
           
-          {/* 아이콘만 표시 */}
           <div className="flex flex-col items-center gap-8">
             <DocumentTextIcon className="w-6 h-6 text-blue-500" />
             <PuzzlePieceIcon className="w-6 h-6 text-green-500" />
             <ChatBubbleBottomCenterTextIcon className="w-6 h-6 text-amber-500" />
           </div>
           
-          <div></div> {/* 하단 공간 */}
+          <div></div>
         </div>
       ) : (
-        // 펼친 상태 UI - 최소 높이 설정 추가
         <div className="flex flex-col h-full overflow-y-auto">
-          {/* 헤더 영역 - 고정 높이 */}
+          {/* 헤더 영역 */}
           <div className="flex justify-between items-center p-4 pb-2 flex-shrink-0">
             <div className="flex items-center">
               <DocumentTextIcon className="w-5 h-5 text-blue-500 mr-2" />
@@ -165,14 +147,11 @@ export default function RightSidebar({
             </button>
           </div>
 
-          {/* 게임 트리 영역 - 최소 높이 설정 */}
+          {/* 게임 트리 영역 */}
           <div className="border-b border-gray-200 overflow-hidden px-4 pt-0 pb-4 flex-shrink-0" style={{ height: '50%', minHeight: '250px' }}>
             <div className="bg-white rounded-lg p-2 h-full overflow-hidden">
               {gameTree ? (
-                <div 
-                  ref={treeContainerRef}
-                  className="h-full overflow-auto custom-scrollbar bg-white"
-                >
+                <div ref={treeContainerRef} className="h-full overflow-auto custom-scrollbar bg-white">
                   <div className="relative min-w-[180px]">
                     <GameTreeManager
                       gameTree={gameTree}
@@ -183,15 +162,13 @@ export default function RightSidebar({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center">
-                  <p className="text-gray-500 text-sm">
-                    아직 게임이 시작되지 않았습니다.
-                  </p>
+                  <p className="text-gray-500 text-sm">아직 게임이 시작되지 않았습니다.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 바둑 개념 학습 영역 - 최소 높이 설정 */}
+          {/* 바둑 개념 학습 영역 */}
           <div className="border-b border-gray-200 overflow-hidden flex-shrink-0" style={{ height: '15%', minHeight: '120px' }}>
             <div className="p-4 h-full flex flex-col">
               <div className="flex items-center mb-2">
@@ -199,8 +176,26 @@ export default function RightSidebar({
                 <h3 className="text-md font-semibold text-gray-700">바둑 개념 학습</h3>
               </div>
               
-              <div className="bg-white rounded-lg p-2 flex-1 flex items-center justify-center">
-                <p className="text-gray-500 text-sm">연관된 개념이 없습니다.</p>
+              <div className="bg-white rounded-lg p-2 flex-1">
+                {currentPattern ? (
+                  <div className="flex flex-col h-full">
+                    <p className="text-gray-900 font-medium mb-1">{currentPattern.description}</p>
+                    {currentPattern.url && (
+                      <a 
+                        href={currentPattern.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sky-500 hover:text-sky-600 text-sm mt-auto"
+                      >
+                        자세히 보기 →
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500 text-sm">연관된 개념이 없습니다.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

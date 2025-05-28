@@ -7,8 +7,10 @@ import {
   Hashable,
   Pointer,
   GameTree,
-  GameNode
+  GameNode,
+  PatternDescription
 } from './types';
+import { recognizePattern } from './patterns';
 
 /**
  * HashSet 클래스 구현
@@ -1742,5 +1744,23 @@ export class Game {
     }
 
     return true;
+  }
+
+  // 현재 수의 패턴 인식
+  async getCurrentPattern(): Promise<PatternDescription | null> {
+    if (!this.lastMove) return null;
+    
+    const signMap = this.intersections.map(row => 
+      row.map(intersection => {
+        switch (intersection.stone) {
+          case Stone.Black: return 1;
+          case Stone.White: return 2;
+          default: return 0;
+        }
+      })
+    );
+    
+    const sign = this.turn === Stone.Black ? 1 : 2;
+    return recognizePattern(signMap, sign, this.lastMove.xPos, this.lastMove.yPos);
   }
 }

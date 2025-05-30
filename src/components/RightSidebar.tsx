@@ -16,7 +16,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 interface RightSidebarProps {
   comment: string;
   setComment: (comment: string) => void;
-  gameRef: React.RefObject<Game>;
+  gameRef: React.RefObject<Game | null>;  // null을 허용하도록 수정
   gameTree?: GameTree;
   isCollapsed: boolean;
   onToggle: () => void;
